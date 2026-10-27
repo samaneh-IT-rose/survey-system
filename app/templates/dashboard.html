@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}داشبورد — {{ app_title }}{% endblock %}
+{% block content %}
+<div data-page="dashboard"></div>
+
+<div class="pagehead">
+  <div>
+    <h1>داشبورد آماری</h1>
+    <div class="sub">آمار بر اساس فیلترهای انتخابی؛ پاسخ‌های خالی جداگانه گزارش می‌شوند</div>
+  </div>
+  <div class="actions">
+    <button class="btn" id="excelBtn"><span class="icn">📊</span> خروجی اکسل فیلتر جاری</button>
+  </div>
+</div>
+
+<section class="card">
+  <h2>فیلترها</h2>
+  <div class="filters">
+    <div class="field">
+      <label for="fprovince">استان</label>
+      <select id="fprovince"><option value="">همه</option></select>
+    </div>
+    <div class="field">
+      <label for="fcounty">شهرستان</label>
+      <select id="fcounty" disabled><option value="">همه</option></select>
+    </div>
+    <div class="field">
+      <label for="fcontact">وضعیت تماس</label>
+      <select id="fcontact"><option value="">همه</option></select>
+    </div>
+    <div class="field">
+      <label for="ffrom">از تاریخ (شمسی)</label>
+      <input id="ffrom" type="text" class="input" placeholder="۱۴۰۵/۰۱/۰۱" inputmode="numeric">
+    </div>
+    <div class="field">
+      <label for="fto">تا تاریخ (شمسی)</label>
+      <input id="fto" type="text" class="input" placeholder="۱۴۰۵/۱۲/۲۹" inputmode="numeric">
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <div style="display:flex; gap:8px">
+        <button class="btn primary" id="applyBtn" style="flex:1"><span class="icn">🔎</span> اعمال</button>
+        <button class="btn" id="resetBtn" title="حذف فیلترها">↺</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="kpis">
+  <div class="kpi"><div class="v" id="kpiTotal">—</div><div class="t">مجموع فرم‌های فیلترشده</div></div>
+  <div class="kpi"><div class="v" id="kpiCompleted">—</div><div class="t">فرم‌های تکمیل‌شده (نظرسنجی کامل)</div></div>
+  <div class="kpi"><div class="v" id="kpiRate">—</div><div class="t">نرخ تکمیل</div></div>
+  <div class="kpi"><div class="v" id="kpiUpdated">—</div><div class="t">تاریخ گزارش (شمسی)</div></div>
+</div>
+
+<div class="charts">
+  <div class="chartbox" style="grid-column: 1 / -1;">
+    <h3>فراوانی گزینه‌های هر سؤال (بدون پاسخ جداگانه)</h3>
+    <div class="ch tall" id="chartQuestions"></div>
+  </div>
+  <div class="chartbox">
+    <h3>وضعیت تماس</h3>
+    <div class="ch" id="chartContact"></div>
+  </div>
+  <div class="chartbox">
+    <h3>برترین استان‌ها</h3>
+    <div class="ch" id="chartProvince"></div>
+  </div>
+  <div class="chartbox" style="grid-column: 1 / -1;">
+    <h3>روند ثبت روزانه</h3>
+    <div class="ch" id="chartTrend"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ prefix }}/static/vendor/echarts.min.js"></script>
+<script src="{{ prefix }}/static/js/dashboard.js"></script>
+{% endblock %}

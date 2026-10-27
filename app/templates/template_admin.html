@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}مدیریت الگوی فرم — {{ app_title }}{% endblock %}
+{% block content %}
+<div data-page="template"></div>
+
+<div class="pagehead">
+  <div>
+    <h1>مدیریت الگوی فرم</h1>
+    <div class="sub">ویرایش عنوان‌ها، متن پرسش‌ها و وضعیت‌های تماس (بخش ۸ سند)</div>
+  </div>
+</div>
+
+<div class="note">
+  پاسخ‌های ثبت‌شده، متن پرسش را به‌صورت مستقل نگه می‌دارند؛ ویرایش متن الگو،
+  معنای پاسخ‌های قدیمی را تغییر نمی‌دهد. غیرفعال‌کردن یک سؤال فقط از فرم‌های جدید حذف می‌شود.
+</div>
+
+<section class="card">
+  <h2>سؤال‌های جدول نظرسنجی</h2>
+  <div id="qList"></div>
+  <div class="addrow">
+    <input type="text" id="newQ" placeholder="متن سؤال جدید…" maxlength="300">
+    <button class="btn primary" id="addQBtn">+ افزودن سؤال</button>
+  </div>
+</section>
+
+<section class="card">
+  <h2>وضعیت‌های تماس</h2>
+  <div class="note" style="margin-top:0">
+    اگر «نیازمند تکمیل جدول» فعال باشد، تکمیل همه سؤال‌ها برای آن وضعیت الزامی است؛
+    در غیر این صورت جدول در فرم غیرفعال می‌شود و پاسخ‌ها خالی گزارش می‌گردند.
+  </div>
+  <div id="cList"></div>
+  <div class="addrow">
+    <input type="text" id="newC" placeholder="متن وضعیت تماس جدید…" maxlength="300">
+    <label class="switchline"><input type="checkbox" id="newCRequires" checked> نیازمند تکمیل جدول</label>
+    <button class="btn primary" id="addCBtn">+ افزودن</button>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ prefix }}/static/js/template_admin.js"></script>
+{% endblock %}

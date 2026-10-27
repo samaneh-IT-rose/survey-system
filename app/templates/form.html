@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}ثبت فرم نظرسنجی — {{ app_title }}{% endblock %}
+{% block content %}
+<div data-page="form"></div>
+
+<div class="pagehead">
+  <div>
+    <h1 id="formTitle">ثبت فرم نظرسنجی</h1>
+    <div class="sub" id="editBadge"></div>
+  </div>
+  <a class="btn sm" href="{{ prefix }}/records">آرشیو فرم‌ها ←</a>
+</div>
+
+<form id="surveyForm" novalidate>
+  <section class="card">
+    <h2><span class="num">۱</span> مشخصات مصاحبه‌شونده</h2>
+    <div class="grid">
+      <div class="field" id="f-first_name">
+        <label for="first_name">نام <span class="req">*</span></label>
+        <input id="first_name" name="first_name" type="text" maxlength="60" autocomplete="given-name">
+        <div class="err"></div>
+      </div>
+      <div class="field" id="f-last_name">
+        <label for="last_name">نام خانوادگی <span class="req">*</span></label>
+        <input id="last_name" name="last_name" type="text" maxlength="60" autocomplete="family-name">
+        <div class="err"></div>
+      </div>
+      <div class="field" id="f-national_code">
+        <label for="national_code">کد ملی <span class="req">*</span></label>
+        <input id="national_code" name="national_code" type="text" inputmode="numeric" maxlength="14" placeholder="مثلاً ۰۱۲۳۴۵۶۷۸۹">
+        <div class="hint">ارقام فارسی پذیرفته می‌شود؛ کد به‌صورت متن و با حفظ صفر ابتدایی ذخیره می‌شود.</div>
+        <div class="err"></div>
+      </div>
+      <div class="field" id="f-phone">
+        <label for="phone">شماره تماس <span class="req">*</span></label>
+        <input id="phone" name="phone" type="tel" inputmode="numeric" maxlength="14" placeholder="۰۹۱۲۱۲۳۴۵۶۷">
+        <div class="err"></div>
+      </div>
+      <div class="field" id="f-province_id">
+        <label for="province_id">استان <span class="req">*</span></label>
+        <select id="province_id" name="province_id">
+          <option value="">انتخاب استان…</option>
+        </select>
+        <div class="err"></div>
+      </div>
+      <div class="field" id="f-county_id">
+        <label for="county_id">شهرستان <span class="req">*</span></label>
+        <select id="county_id" name="county_id" disabled>
+          <option value="">ابتدا استان را انتخاب کنید…</option>
+        </select>
+        <div class="err"></div>
+      </div>
+      <div class="field" id="f-survey_date">
+        <label for="jy">تاریخ نظرسنجی (شمسی) <span class="req">*</span></label>
+        <div class="datebox">
+          <select id="jy" aria-label="سال"></select>
+          <select id="jm" aria-label="ماه"></select>
+          <select id="jd" aria-label="روز"></select>
+          <button type="button" class="todaybtn" id="todayBtn">امروز</button>
+        </div>
+        <div class="err"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2><span class="num">۲</span> جدول نظرسنجی</h2>
+    <div class="note" id="ratingNote">برای هر سؤال فقط یک گزینه قابل انتخاب است.</div>
+    <div class="tablewrap" id="qtableWrap">
+      <table class="qtable" id="qtable">
+        <thead>
+          <tr>
+            <th scope="col">سؤال</th>
+            {% for label in ["خیلی زیاد", "زیاد", "متوسط", "کم", "خیلی کم"] %}
+            <th scope="col">{{ label }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for q in questions %}
+          <tr>
+            <th scope="row">{{ q.text }}</th>
+            {% for label in ["خیلی زیاد", "زیاد", "متوسط", "کم", "خیلی کم"] %}
+            <td>
+              <span class="tick">
+                <input type="radio" name="q{{ q.id }}" value="{{ label }}" id="q{{ q.id }}-{{ loop.index }}" aria-label="{{ q.text }} — {{ label }}">
+                <label for="q{{ q.id }}-{{ loop.index }}">{{ label }}</label>
+              </span>
+            </td>
+            {% endfor %}
+          </tr>
+          {% else %}
+          <tr><td colspan="6">سؤالی تعریف نشده است. از «مدیریت الگو» سؤال اضافه کنید.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2><span class="num">۳</span> وضعیت تماس</h2>
+    <div class="radiolist" id="contactList">
+      {% for c in contact_options %}
+      <label class="tickline">
+        <input type="radio" name="contact_option_id" value="{{ c.id }}" data-requires="{{ 1 if c.requires_answers else 0 }}">
+        <span>{{ c.text }}</span>
+      </label>
+      {% else %}
+      <span class="muted">وضعیتی تعریف نشده است.</span>
+      {% endfor %}
+    </div>
+    <div class="field" id="f-contact_option_id" style="margin-top:8px"><div class="err"></div></div>
+    <div class="field" id="f-answers" style="margin-top:0"><div class="err"></div></div>
+  </section>
+
+  <section class="card">
+    <div class="actions">
+      <button type="submit" class="btn primary" id="saveBtn">
+        <span class="icn">💾</span> ذخیره
+      </button>
+      <button type="button" class="btn danger" id="clearBtn">
+        <span class="icn">🧹</span> پاک‌کردن / فرم جدید
+      </button>
+      <span class="muted" id="saveState" aria-live="polite"></span>
+    </div>
+  </section>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+window.__BOOT__ = {
+  todayJalali: {{ today | tojson }},
+  years: {{ years | tojson }},
+  leapYears: {{ leap_years | tojson }},
+  questions: {{ questions | tojson }},
+  recordId: new URLSearchParams(location.search).get("id")
+};
+</script>
+<script src="{{ prefix }}/static/js/form.js"></script>
+{% endblock %}

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>فرم نظرسنجی — {{ record.first_name }} {{ record.last_name }}</title>
+  <style>
+    /* قالب مستقل چاپ/PDF — رنگ‌ها مستقل از تم رابط (بخش ۹ سند) */
+    @page { size: A4 portrait; margin: 0; }
+
+    :root {
+      --ink: #1f2430;
+      --line: #565b66;
+      --accent: #ba376d;
+      --line-w: 1.1px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    @font-face {
+      font-family: "Vazirmatn";
+      src: url("/app/static/fonts/Vazirmatn-Regular.woff2") format("woff2");
+      font-weight: 400;
+    }
+    @font-face {
+      font-family: "Vazirmatn";
+      src: url("/app/static/fonts/Vazirmatn-Bold.woff2") format("woff2");
+      font-weight: 700;
+    }
+
+    html, body { background: #ffffff; }
+
+    body {
+      font-family: "Vazirmatn", Tahoma, Arial, sans-serif;
+      color: var(--ink);
+      width: 210mm;
+      min-height: 296mm;
+      padding: 11mm 12mm 8mm;
+      font-size: 10.6pt;
+      line-height: 1.75;
+    }
+
+    bdi, .num { direction: ltr; unicode-bidi: isolate; }
+
+    /* سربرگ */
+    .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8mm; border-bottom: calc(var(--line-w) * 2.2) solid var(--accent); padding-bottom: 3.2mm; }
+    .head .logo { width: 21mm; max-height: 21mm; object-fit: contain; }
+    .head .titles { text-align: center; flex: 1; }
+    .head h1 { font-size: 15.5pt; color: var(--accent); }
+    .head .org { font-size: 11pt; font-weight: 700; margin-top: 1mm; }
+    .head .meta { font-size: 8.6pt; color: #565b66; margin-top: 0.8mm; }
+
+    /* مشخصات */
+    .sec-title { font-size: 11pt; font-weight: 700; color: var(--accent); margin: 3.6mm 0 2mm; display: flex; align-items: center; gap: 2.5mm; }
+    .sec-title::after { content: ""; flex: 1; border-top: var(--line-w) dotted var(--line); }
+
+    .info { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.8mm 4mm; }
+    .info .f { border-bottom: var(--line-w) dotted var(--line); padding-bottom: 0.7mm; display: flex; gap: 2mm; align-items: baseline; }
+    .info .f b { font-size: 8.8pt; font-weight: 700; white-space: nowrap; }
+    .info .f span { flex: 1; text-align: center; font-size: 10pt; }
+
+    /* جدول نظرسنجی */
+    table.sheet { width: 100%; border-collapse: collapse; margin-top: 1mm; }
+    table.sheet th, table.sheet td { border: var(--line-w) solid var(--line); padding: 1.5mm 1.6mm; text-align: center; }
+    table.sheet thead th { background: #f7eef3; font-size: 9.2pt; font-weight: 700; }
+    table.sheet tbody th { text-align: right; font-weight: 500; font-size: 9.4pt; width: 41%; }
+    table.sheet td .mark { font-size: 12.5pt; font-weight: 700; color: var(--accent); }
+    table.sheet td .dim { color: #b9bdc7; font-size: 10pt; }
+
+    /* وضعیت تماس */
+    .contacts { display: flex; flex-wrap: wrap; gap: 1.6mm 6mm; padding: 1mm 1mm 0.6mm; }
+    .contacts .c { font-size: 9.6pt; display: flex; align-items: center; gap: 1.6mm; }
+    .contacts .c i { font-style: normal; width: 4.1mm; height: 4.1mm; border: var(--line-w) solid var(--line); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 8.6pt; color: var(--accent); font-weight: 700; }
+
+    .footnote { margin-top: 3.2mm; border-top: var(--line-w) dotted var(--line); padding-top: 1.6mm; font-size: 8.2pt; color: #565b66; display: flex; justify-content: space-between; }
+
+    /* دکمه چاپ فقط در نمای مرورگر */
+    .printbar { position: fixed; top: 12px; left: 12px; z-index: 9; display: flex; gap: 8px; }
+    .printbar button {
+      font-family: inherit; font-size: 14px; padding: 10px 18px; border-radius: 10px;
+      border: 1px solid #ba376d; background: #ba376d; color: #fff; cursor: pointer;
+      box-shadow: 0 6px 16px rgba(0,0,0,.18);
+    }
+    .printbar button.ghost { background: #fff; color: #ba376d; }
+
+    @media print {
+      .printbar { display: none !important; }
+      body { width: auto; min-height: auto; }
+    }
+  </style>
+</head>
+<body>
+  {% if interactive %}
+  <div class="printbar">
+    <button type="button" onclick="window.print()">🖨 چاپ (کاغذ A4، مقیاس ۱۰۰٪)</button>
+    <button type="button" class="ghost" onclick="window.close()">بستن</button>
+  </div>
+  {% endif %}
+
+  <div class="head">
+    <div class="titles">
+      <h1>{{ app_title }}</h1>
+      <div class="org">{{ org_name }}</div>
+      <div class="meta">فرم تکمیل‌شده نظرسنجی تلفنی — تاریخ چاپ: <bdi>{{ today }}</bdi>{% if record.id %} — شماره رکورد: <bdi>{{ record.id }}</bdi>{% endif %}</div>
+    </div>
+    <img class="logo" src="/app/static/logo/logo.svg" alt="لوگو">
+  </div>
+
+  <div class="sec-title">مشخصات مصاحبه‌شونده</div>
+  <div class="info">
+    <div class="f"><b>نام:</b><span>{{ record.first_name }}</span></div>
+    <div class="f"><b>نام خانوادگی:</b><span>{{ record.last_name }}</span></div>
+    <div class="f"><b>کد ملی:</b><span class="num">{{ record.national_code }}</span></div>
+    <div class="f"><b>شماره تماس:</b><span class="num">{{ record.phone }}</span></div>
+    <div class="f"><b>استان:</b><span>{{ record.province.name }}</span></div>
+    <div class="f"><b>شهرستان:</b><span>{{ record.county.name }}</span></div>
+    <div class="f"><b>تاریخ نظرسنجی (شمسی):</b><span class="num">{{ record.survey_date_jalali }}</span></div>
+    <div class="f"><b>شناسه رکورد:</b><span class="num">{{ record.id }}</span></div>
+  </div>
+
+  <div class="sec-title">جدول نظرسنجی</div>
+  <table class="sheet">
+    <thead>
+      <tr>
+        <th>سؤال</th>
+        {% for label in ["خیلی زیاد", "زیاد", "متوسط", "کم", "خیلی کم"] %}
+        <th>{{ label }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for q in questions %}
+      <tr>
+        <th>{{ loop.index }}. {{ q.text }}</th>
+        {% for label in ["خیلی زیاد", "زیاد", "متوسط", "کم", "خیلی کم"] %}
+        <td>{% if q.value == label %}<span class="mark">✓</span>{% else %}<span class="dim">·</span>{% endif %}</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+      {% if not questions %}
+      <tr><td colspan="6">سؤالی تعریف نشده بود.</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+
+  <div class="sec-title">وضعیت تماس</div>
+  <div class="contacts">
+    {% for c in contact_options %}
+    <div class="c"><i>{% if record.contact_option and record.contact_option.id == c.id %}✓{% endif %}</i>{{ c.text }}</div>
+    {% endfor %}
+  </div>
+
+  <div class="footnote">
+    <span>این فرم توسط سامانه نظرسنجی تولید شده است.</span>
+    <span>زمان ثبت: <bdi>{{ record.created_at_fa }}</bdi> — آخرین ویرایش: <bdi>{{ record.updated_at_fa }}</bdi></span>
+  </div>
+</body>
+</html>
