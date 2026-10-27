@@ -4,7 +4,7 @@
 # با  ln -sf /etc/nginx/sites-available/survey-system /etc/nginx/sites-enabled/  فعال کنید.
 
 server {
-    listen 80;
+    listen 8090;                # پورت فرانت — همان که در مرورگر باز می‌شود
     server_name _;              # نام دامنه خود را بگذارید، مثلاً survey.example.com
     client_max_body_size 10m;
 
@@ -17,7 +17,7 @@ server {
 
     # بقیه درخواست‌ها به uvicorn
     location / {
-        proxy_pass http://127.0.0.1:8000;
+        proxy_pass http://127.0.0.1:3010;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;

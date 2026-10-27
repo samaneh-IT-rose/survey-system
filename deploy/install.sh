@@ -8,7 +8,9 @@
 #      ۳) sudo bash deploy/install.sh
 #
 #  متغیرهای اختیاری (قبل از اجرا تنظیم کنید):
-#      DOMAIN=example.com  APP_PORT=8000  APP_DIR=/opt/survey-system
+#      DOMAIN=example.com  APP_DIR=/opt/survey-system
+#      APP_PORT=3010   ← پورت بک‌اند (uvicorn)
+#      WEB_PORT=8090   ← پورت فرانت (nginx — همان آدرسی که در مرورگر باز می‌شود)
 #      RUN_USER=surveyapp  DB_NAME=surveydb  DB_USER=survey  ORG_NAME="راه زندگی"
 # ═══════════════════════════════════════════════════════════════════════
 set -euo pipefail
@@ -19,7 +21,8 @@ RUN_USER="${RUN_USER:-surveyapp}"
 DB_NAME="${DB_NAME:-surveydb}"
 DB_USER="${DB_USER:-survey}"
 DB_PASS="${DB_PASS:-$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 24)}"
-APP_PORT="${APP_PORT:-8000}"
+APP_PORT="${APP_PORT:-3010}"          # پورت بک‌اند (uvicorn)
+WEB_PORT="${WEB_PORT:-8090}"          # پورت فرانت (nginx)
 DOMAIN="${DOMAIN:-_}"
 ORG_NAME="${ORG_NAME:-راه زندگی}"
 SRC_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -90,7 +93,7 @@ Type=simple
 User=$RUN_USER
 WorkingDirectory=$APP_DIR
 EnvironmentFile=$APP_DIR/.env
-ExecStart=$APP_DIR/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port $APP_PORT --workers 2
+ExecStart=$APP_DIR/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port $APP_PORT --workers 2
 Restart=always
 RestartSec=3
 
@@ -105,7 +108,7 @@ systemctl --no-pager --lines 0 status survey-system || true
 echo "═══ ۹/۹  پیکربندی nginx ═══"
 cat > /etc/nginx/sites-available/survey-system <<EOF
 server {
-    listen 80;
+    listen $WEB_PORT;
     server_name $DOMAIN;
     client_max_body_size 10m;
 
@@ -134,8 +137,9 @@ nginx -t
 systemctl reload nginx
 
 if command -v ufw >/dev/null 2>&1 && ufw status | grep -q "Status: active"; then
-  ufw allow 80/tcp  >/dev/null || true
-  ufw allow 443/tcp >/dev/null || true
+  ufw allow "$WEB_PORT"/tcp >/dev/null || true
+  ufw allow "$APP_PORT"/tcp >/dev/null || true
+  ufw allow 443/tcp         >/dev/null || true
 fi
 
 IP="$(curl -s --max-time 4 ifconfig.me 2>/dev/null || hostname -I | awk '{print $1}')"
@@ -144,7 +148,8 @@ cat <<EOF
 ════════════════════════════════════════════════════════════════
   نصب کامل شد
 ════════════════════════════════════════════════════════════════
-  نشانی برنامه :  http://$IP/app/
+  نشانی برنامه :  http://$IP:$WEB_PORT/app/   (فرانت — در مرورگر باز کنید)
+  بک‌اند        :  http://$IP:$APP_PORT/app/   (uvicorn)
   دامنه         :  $DOMAIN   (برای SSL: sudo apt install certbot python3-certbot-nginx && sudo certbot --nginx)
 
   مدیریت سرویس :

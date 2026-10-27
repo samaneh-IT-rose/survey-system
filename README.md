@@ -143,10 +143,19 @@ sudo bash deploy/install.sh
 تنظیمات اختیاری قبل از اجرا:
 
 ```bash
-sudo DOMAIN=survey.example.com APP_PORT=8000 ORG_NAME="راه زندگی" bash deploy/install.sh
+sudo DOMAIN=survey.example.com ORG_NAME="راه زندگی" bash deploy/install.sh
 ```
 
-پس از نصب، برنامه روی `http://SERVER_IP/app/` در دسترس است و:
+### پورت‌ها
+
+| بخش | پورت پیش‌فرض | توضیح |
+|---|---|---|
+| فرانت (nginx — آدرس مرورگر) | **8090** | با `WEB_PORT` تغییر می‌کند |
+| بک‌اند (uvicorn/FastAPI) | **3010** | با `APP_PORT` تغییر می‌کند |
+
+مثال تغییر: `sudo WEB_PORT=80 APP_PORT=3010 bash deploy/install.sh`
+
+پس از نصب، برنامه روی `http://SERVER_IP:8090/app/` در دسترس است و:
 
 - سرویس: `systemctl status survey-system` — ری‌استارت: `sudo systemctl restart survey-system`
 - لاگ زنده: `journalctl -u survey-system -f`

@@ -14,7 +14,7 @@ Type=simple
 User=surveyapp
 WorkingDirectory=/opt/survey-system
 EnvironmentFile=/opt/survey-system/.env
-ExecStart=/opt/survey-system/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 2
+ExecStart=/opt/survey-system/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 3010 --workers 2
 Restart=always
 RestartSec=3
 
