@@ -120,13 +120,30 @@ Write-Host ">> [4/8] Creating virtual environment and installing dependencies (5
 Push-Location $APPDIR
 if (-not (Test-Path "venv\Scripts\python.exe")) { & $PY -m venv venv }
 $VPY = "$APPDIR\venv\Scripts\python.exe"
-& $VPY -m pip install --upgrade pip --quiet
-& $VPY -m pip install -r requirements.txt
-if ($LASTEXITCODE -ne 0) { Write-Host "ERROR: pip install failed." -ForegroundColor Red; Pause; exit 1 }
+$PIP_MIRRORS = @(
+    "https://mirror-pypi.runflare.com/simple",
+    "https://mirrors.aliyun.com/pypi/simple/",
+    "https://pypi.org/simple"
+)
+$ok = $false
+foreach ($m in $PIP_MIRRORS) {
+    $hn = ([Uri]$m).Host
+    Write-Host "   Trying mirror: $m ..."
+    & $VPY -m pip install -r requirements.txt -i $m --trusted-host $hn --timeout 90 --retries 5
+    if ($LASTEXITCODE -eq 0) { $ok = $true; break }
+    Write-Host "   Mirror failed, trying next..." -ForegroundColor Yellow
+}
+if (-not $ok) { Write-Host "ERROR: pip install failed on all mirrors." -ForegroundColor Red; Pause; exit 1 }
 
 # ---------- 5) Chromium for PDF ----------
 Write-Host ">> [5/8] Downloading Chromium for PDF export (2-5 min, one time)..."
-& "$APPDIR\venv\Scripts\playwright.exe" install chromium
+& $VPY -m playwright install chromium
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "   Retrying Chromium with mirror (npmmirror)..." -ForegroundColor Yellow
+    $env:PLAYWRIGHT_DOWNLOAD_HOST = "https://cdn.npmmirror.com/binaries/playwright"
+    & $VPY -m playwright install chromium
+    if ($LASTEXITCODE -ne 0) { Write-Host "ERROR: Chromium download failed." -ForegroundColor Red; Pause; exit 1 }
+}
 
 # ---------- 6) Database + base data ----------
 Write-Host ">> [6/8] Creating database and base data..."
@@ -154,8 +171,8 @@ schtasks /Run /TN "SurveySystem" | Out-Null
 Write-Host ">> [8/8] Opening firewall ports ($FRONTEND frontend, $BACKEND backend)..."
 New-NetFirewallRule -DisplayName "Survey Web $FRONTEND" -Direction Inbound -Protocol TCP -LocalPort $FRONTEND -Action Allow -ErrorAction SilentlyContinue | Out-Null
 New-NetFirewallRule -DisplayName "Survey API $BACKEND" -Direction Inbound -Protocol TCP -LocalPort $BACKEND  -Action Allow -ErrorAction SilentlyContinue | Out-Null
-netsh interface portproxy delete v4tov4 listenport=$FRONTEND listenaddress=0.0.0.0 2>$null
-netsh interface portproxy add    v4tov4 listenport=$FRONTEND listenaddress=0.0.0.0 connectport=$BACKEND connectaddress=127.0.0.1
+cmd /c "netsh interface portproxy delete v4tov4 listenport=$FRONTEND listenaddress=0.0.0.0 >nul 2>&1"
+cmd /c "netsh interface portproxy add v4tov4 listenport=$FRONTEND listenaddress=0.0.0.0 connectport=$BACKEND connectaddress=127.0.0.1"
 
 # ---------- final check ----------
 Write-Host ">> Waiting for server to start..."
