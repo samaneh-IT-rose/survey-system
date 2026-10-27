@@ -1,0 +1,22 @@
+# ── نمونه فایل سرویس systemd ──
+# نصب خودکار توسط deploy/install.sh انجام می‌شود.
+# برای نصب دستی: این فایل را در /etc/systemd/system/survey-system.service قرار دهید
+# و مسیرها/کاربر را مطابق سرور خود اصلاح کنید، سپس:
+#   sudo systemctl daemon-reload && sudo systemctl enable --now survey-system
+
+[Unit]
+Description=Survey System (FastAPI + Uvicorn)
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=surveyapp
+WorkingDirectory=/opt/survey-system
+EnvironmentFile=/opt/survey-system/.env
+ExecStart=/opt/survey-system/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 2
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
