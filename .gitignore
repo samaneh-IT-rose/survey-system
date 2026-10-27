@@ -1,0 +1,39 @@
+# پایتون
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+venv/
+.venv/
+env/
+
+# محیط و تنظیمات محلی
+.env
+.env.local
+
+# دیتابیس محلی و داده موقت
+*.db
+*.sqlite3
+pgdata/
+*.dump
+
+# لاگ‌ها و فایل‌های اجرا
+logs/
+*.pid
+nohup.out
+
+# خروجی‌های آزمون
+/tmp/
+*.xlsx
+*.pdf
+!docs/**/*.pdf
+
+# مرورگر Playwright
+.playwright/
+
+# سیستم‌عامل و ابزارها
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
