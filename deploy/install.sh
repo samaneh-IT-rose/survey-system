@@ -32,7 +32,7 @@ fi
 echo "═══ ۱/۹  نصب بسته‌های سیستم ═══"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
-apt-get install -y python3 python3-venv python3-pip postgresql nginx rsync curl
+apt-get install -y python3 python3-venv python3-pip postgresql nginx rsync curl git
 systemctl enable --now postgresql >/dev/null 2>&1 || service postgresql start
 sleep 2
 
