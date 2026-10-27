@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """نقطه ورود FastAPI — سامانه فرم نظرسنجی تلفنی."""
+import logging
+import traceback
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -39,6 +41,13 @@ app.include_router(api_dashboard.router, prefix=APP_PREFIX)
 
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception):
+    # ثبت کامل ردپای خطا در لاگ سرور (logs/server.log) برای امکان عیب‌یابی
+    logging.getLogger("survey.error").error(
+        "Unhandled error on %s %s\n%s",
+        request.method,
+        request.url.path,
+        traceback.format_exc(),
+    )
     # پیام خطای استاندارد بدون افشای جزئیات سرور (بخش ۱۴ و ۱۵ سند)
     return JSONResponse(
         status_code=500,

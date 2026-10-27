@@ -136,7 +136,12 @@ foreach ($m in $PIP_MIRRORS) {
 if (-not $ok) { Write-Host "ERROR: pip install failed on all mirrors." -ForegroundColor Red; Pause; exit 1 }
 
 # ---------- 5) Chromium for PDF ----------
+# NOTE: Chromium MUST be in a global path (C:\playwright-browsers), NOT the
+# current user's profile, because the service runs as SYSTEM and would
+# otherwise not find the browser (PDF export would fail with error 500).
 Write-Host ">> [5/8] Downloading Chromium for PDF export (2-5 min, one time)..."
+New-Item -ItemType Directory -Path "C:\playwright-browsers" -Force | Out-Null
+$env:PLAYWRIGHT_BROWSERS_PATH = "C:\playwright-browsers"
 & $VPY -m playwright install chromium
 if ($LASTEXITCODE -ne 0) {
     Write-Host "   Retrying Chromium with mirror (npmmirror)..." -ForegroundColor Yellow
@@ -144,6 +149,7 @@ if ($LASTEXITCODE -ne 0) {
     & $VPY -m playwright install chromium
     if ($LASTEXITCODE -ne 0) { Write-Host "ERROR: Chromium download failed." -ForegroundColor Red; Pause; exit 1 }
 }
+icacls "C:\playwright-browsers" /grant *S-1-5-18:(OI)(CI)F /T | Out-Null
 
 # ---------- 6) Database + base data ----------
 Write-Host ">> [6/8] Creating database and base data..."
@@ -160,6 +166,7 @@ cd /d $APPDIR
 if not exist logs mkdir logs
 set SURVEY_DATABASE_URL=sqlite:///C:/survey-system/data/survey.db
 set SURVEY_SELF_URL=http://127.0.0.1:$BACKEND
+set PLAYWRIGHT_BROWSERS_PATH=C:\playwright-browsers
 "$APPDIR\venv\Scripts\python.exe" -m uvicorn app.main:app --host 0.0.0.0 --port $BACKEND --log-level info >> "$APPDIR\logs\server.log" 2>&1
 "@
 $bat | Set-Content "$APPDIR\run-server.bat" -Encoding ASCII

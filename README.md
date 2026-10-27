@@ -163,6 +163,17 @@ sudo DOMAIN=survey.example.com ORG_NAME="راه زندگی" bash deploy/install.
 - به‌روزرسانی کد: `git pull && sudo bash deploy/install.sh` — فایل `.env` حفظ می‌شود
 - HTTPS: `sudo apt install certbot python3-certbot-nginx && sudo certbot --nginx`
 
+### سرور ویندوزی (RDP)
+
+برای سرورهای ویندوزی، از پاورشل زیر استفاده کنید:
+
+- نصب کامل (یک‌بار): `deploy/install-windows.ps1` — بک‌اند 3010 روی SQLite + اجرای خودکار پس از ری‌استارت + فایروال و portproxy برای 8090
+- اگر دکمهٔ PDF خطا داد: `deploy/fix-pdf-windows.ps1` — Chromium را در مسیر سراسری `C:\playwright-browsers` نصب و سرویس را ری‌استارت و تست PDF می‌کند
+
+هر دو فایل را با PowerShell به‌صورت **Run as Administrator** اجرا کنید. لاگ سرور: `C:\survey-system\logs\server.log`
+
+> نکته: مرورگر Chromium باید در مسیر سراسری باشد، نه پوشهٔ پروفایل کاربر؛ چون سرویس با حساب SYSTEM اجرا می‌شود و پروفایل ادمین را نمی‌بیند — علت اصلی خطای PDF روی ویندوز همین است.
+
 <details>
 <summary>مراحل دستی (بدون اسکریپت)</summary>
 
@@ -191,10 +202,12 @@ pg_restore -h 127.0.0.1 -U survey -d surveydb --clean backup.dump
 |---|---|
 | خطای اتصال دیتابیس | `bash scripts/setup_postgres.sh` و بررسی با `pg_isready -h 127.0.0.1 -p 5432` |
 | صفحه `/app` باز نمی‌شود | لاگ: `journalctl -u survey-system -f` یا `logs/survey-server.log` |
-| PDF ساخته نمی‌شود | `venv/bin/playwright install chromium` را روی سرور اجرا کنید |
+| PDF خطا می‌دهد (ویندوز) | `deploy/fix-pdf-windows.ps1` را با PowerShell ادمین اجرا کنید (Chromium مسیر سراسری + ری‌استارت + تست) |
+| PDF ساخته نمی‌شود (لینوکس) | `venv/bin/playwright install chromium` را روی سرور اجرا کنید |
 | خطای 502 در nginx | سرویس در حال اجراست؟ `systemctl status survey-system` |
 | تاریخ ۳۰ اسفند رد می‌شود | درست است؛ کنترل کبیسه در سرور فعال است |
 | فونت فارسی در PDF ناخوانا | فونت‌های وزیرمتن در `app/static/fonts` هست؛ `fc-cache -f` اجرا کنید |
+| دانلود اکسل در مرورگر بلاک می‌شود | هشدار «Insecure download blocked» مربوط به مرورگر است (سایت HTTP است)؛ دکمهٔ Keep/نگه‌داشتن را بزنید — فایل سالم است |
 
 ## مجوز
 
