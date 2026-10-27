@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}آرشیو فرم‌ها — {{ app_title }}{% endblock %}
+{% block content %}
+<div data-page="records"></div>
+
+<div class="pagehead">
+  <div>
+    <h1>آرشیو فرم‌های نظرسنجی</h1>
+    <div class="sub">مشاهده، ویرایش، چاپ و خروجی گرفتن از رکوردهای ذخیره‌شده</div>
+  </div>
+  <a class="btn primary sm" href="{{ prefix }}/">+ ثبت فرم جدید</a>
+</div>
+
+<section class="card">
+  <h2>فیلتر و جست‌وجو</h2>
+  <div class="filters">
+    <div class="field">
+      <label for="fq">جست‌وجو (نام / کد ملی / تلفن)</label>
+      <input id="fq" type="search" class="input" placeholder="مثلاً رضایی یا ۰۹۱۲…">
+    </div>
+    <div class="field">
+      <label for="fprovince">استان</label>
+      <select id="fprovince"><option value="">همه</option></select>
+    </div>
+    <div class="field">
+      <label for="fcounty">شهرستان</label>
+      <select id="fcounty" disabled><option value="">همه</option></select>
+    </div>
+    <div class="field">
+      <label for="fcontact">وضعیت تماس</label>
+      <select id="fcontact"><option value="">همه</option></select>
+    </div>
+    <div class="field">
+      <label for="ffrom">از تاریخ (شمسی)</label>
+      <input id="ffrom" type="text" class="input" placeholder="۱۴۰۵/۰۱/۰۱" inputmode="numeric">
+    </div>
+    <div class="field">
+      <label for="fto">تا تاریخ (شمسی)</label>
+      <input id="fto" type="text" class="input" placeholder="۱۴۰۵/۱۲/۲۹" inputmode="numeric">
+    </div>
+  </div>
+  <div class="actions" style="margin-top:12px">
+    <button class="btn primary" id="applyBtn"><span class="icn">🔎</span> اعمال فیلتر</button>
+    <button class="btn" id="resetBtn"><span class="icn">↺</span> حذف فیلترها</button>
+    <button class="btn" id="excelBtn"><span class="icn">📊</span> خروجی اکسل</button>
+  </div>
+</section>
+
+<section class="card">
+  <h2>رکوردها <span class="badge" id="totalBadge">—</span></h2>
+  <div class="tablewrap">
+    <table class="rtable">
+      <thead>
+        <tr>
+          <th>شناسه</th>
+          <th>نام و نام خانوادگی</th>
+          <th>کد ملی</th>
+          <th>تلفن</th>
+          <th>استان / شهرستان</th>
+          <th>تاریخ</th>
+          <th>وضعیت تماس</th>
+          <th>عملیات</th>
+        </tr>
+      </thead>
+      <tbody id="rowsBody">
+        <tr><td colspan="8" class="muted">در حال بارگذاری…</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="pager">
+    <span class="muted" id="pageInfo"></span>
+    <div class="pages" id="pageBtns"></div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ prefix }}/static/js/records.js"></script>
+{% endblock %}

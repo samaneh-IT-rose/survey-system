@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" data-mode="light" data-palette="pink">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ app_title }}{% endblock %}</title>
+  <link rel="icon" href="{{ prefix }}/static/logo/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ prefix }}/static/css/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="{{ prefix }}/">
+        <img src="{{ logo_url }}" alt="لوگو" width="42" height="42">
+        <span class="brand-name">{{ org_name }}<small>{{ app_title }}</small></span>
+      </a>
+      <nav class="mainnav" aria-label="ناوبری اصلی">
+        <a href="{{ prefix }}/" data-nav="form">فرم نظرسنجی</a>
+        <a href="{{ prefix }}/records" data-nav="records">آرشیو فرم‌ها</a>
+        <a href="{{ prefix }}/dashboard" data-nav="dashboard">داشبورد</a>
+        <a href="{{ prefix }}/template" data-nav="template">مدیریت الگو</a>
+      </nav>
+      <div class="themectrl" role="group" aria-label="تنظیم رنگ و حالت">
+        <div class="swatches" id="paletteSwatches" title="پالت رنگی محیط">
+          <button type="button" class="swatch" data-palette="pink" style="background:#ba376d" aria-label="صورتی سازمانی"></button>
+          <button type="button" class="swatch" data-palette="blue" style="background:#2563eb" aria-label="آبی"></button>
+          <button type="button" class="swatch" data-palette="green" style="background:#059669" aria-label="سبز"></button>
+          <button type="button" class="swatch" data-palette="purple" style="background:#7c3aed" aria-label="بنفش"></button>
+        </div>
+        <button type="button" class="modebtn" id="modeToggle" aria-label="تغییر حالت روز و شب">☀ روز / شب</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="sitefoot">
+    {{ app_title }} — تاریخ امروز: <bdi>{{ today }}</bdi>
+  </footer>
+
+  <div id="toastArea" aria-live="polite"></div>
+
+  <script>window.__PREFIX__ = {{ prefix | tojson }};</script>
+  <script src="{{ prefix }}/static/js/theme.js"></script>
+  <script src="{{ prefix }}/static/js/common.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
