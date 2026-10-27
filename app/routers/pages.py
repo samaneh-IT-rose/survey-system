@@ -13,6 +13,23 @@ from ..utils.jalali import gregorian_to_jalali, is_jalali_leap, today_jalali_str
 
 templates = Jinja2Templates(directory=str(BASE_DIR / "app" / "templates"))
 
+
+def _asset_url(path: str) -> str:
+    """نشانی فایل استاتیک با نسخهٔ مبتنی بر زمان تغییر فایل.
+
+    بدون این پارامتر، مرورگر پس از هر به‌روزرسانی CSS/JS همچنان نسخهٔ قدیمی
+    کش‌شده را نشان می‌دهد (مثل مشکل بریده‌شدن کادر سال تاریخ).
+    """
+    f = BASE_DIR / "app" / path
+    try:
+        v = int(f.stat().st_mtime)
+    except OSError:
+        v = 0
+    return f"{APP_PREFIX}/{path}?v={v}"
+
+
+templates.env.globals["asset"] = _asset_url
+
 router = APIRouter(prefix=APP_PREFIX, tags=["pages"])
 
 
@@ -23,6 +40,7 @@ def _ctx(**extra):
         "logo_url": LOGO_URL,
         "today": today_jalali_str(),
         "prefix": APP_PREFIX,
+        "asset": _asset_url,
     }
     ctx.update(extra)
     return ctx

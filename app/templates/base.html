@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{{ app_title }}{% endblock %}</title>
-  <link rel="icon" href="{{ prefix }}/static/logo/logo.png" type="image/png">
-  <link rel="stylesheet" href="{{ prefix }}/static/css/styles.css">
+  <link rel="icon" href="{{ asset('static/logo/logo.png') }}" type="image/png">
+  <link rel="stylesheet" href="{{ asset('static/css/styles.css') }}">
 </head>
 <body>
   <header class="topbar">
@@ -43,8 +43,8 @@
   <div id="toastArea" aria-live="polite"></div>
 
   <script>window.__PREFIX__ = {{ prefix | tojson }};</script>
-  <script src="{{ prefix }}/static/js/theme.js"></script>
-  <script src="{{ prefix }}/static/js/common.js"></script>
+  <script src="{{ asset('static/js/theme.js') }}"></script>
+  <script src="{{ asset('static/js/common.js') }}"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>
