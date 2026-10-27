@@ -6,8 +6,8 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent  # survey-system/
 
 APP_TITLE = "سامانه فرم نظرسنجی تلفنی"
-ORG_NAME = os.environ.get("SURVEY_ORG_NAME", "نام سازمان")
-LOGO_URL = os.environ.get("SURVEY_LOGO_URL", "/app/static/logo/logo.svg")
+ORG_NAME = os.environ.get("SURVEY_ORG_NAME", "راه زندگی")
+LOGO_URL = os.environ.get("SURVEY_LOGO_URL", "/app/static/logo/logo.png")
 
 # دیتابیس — به‌صورت پیش‌فرض PostgreSQL محلی
 DATABASE_URL = os.environ.get(

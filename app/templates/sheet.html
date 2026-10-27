@@ -43,7 +43,7 @@
 
     /* سربرگ */
     .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8mm; border-bottom: calc(var(--line-w) * 2.2) solid var(--accent); padding-bottom: 3.2mm; }
-    .head .logo { width: 21mm; max-height: 21mm; object-fit: contain; }
+    .head .logo { height: 24mm; width: auto; max-width: 26mm; object-fit: contain; }
     .head .titles { text-align: center; flex: 1; }
     .head h1 { font-size: 15.5pt; color: var(--accent); }
     .head .org { font-size: 11pt; font-weight: 700; margin-top: 1mm; }
@@ -102,7 +102,7 @@
       <div class="org">{{ org_name }}</div>
       <div class="meta">فرم تکمیل‌شده نظرسنجی تلفنی — تاریخ چاپ: <bdi>{{ today }}</bdi>{% if record.id %} — شماره رکورد: <bdi>{{ record.id }}</bdi>{% endif %}</div>
     </div>
-    <img class="logo" src="/app/static/logo/logo.svg" alt="لوگو">
+    <img class="logo" src="/app/static/logo/logo.png" alt="لوگو">
   </div>
 
   <div class="sec-title">مشخصات مصاحبه‌شونده</div>

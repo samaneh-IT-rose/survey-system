@@ -132,7 +132,11 @@
     if (fn.length < 2) errors.first_name = "نام را وارد کنید (حداقل ۲ نویسه).";
     if (ln.length < 2) errors.last_name = "نام خانوادگی را وارد کنید (حداقل ۲ نویسه).";
     var code = window.S.toEnDigits($("national_code").value).trim();
-    if (!/^[0-9]{8,10}$/.test(code)) errors.national_code = "کد ملی باید ۸ تا ۱۰ رقم باشد.";
+    if (!/^[0-9]{8,10}$/.test(code)) {
+      errors.national_code = "کد ملی باید ۸ تا ۱۰ رقم باشد.";
+    } else if (!window.S.checkCodeMeli(code)) {
+      errors.national_code = "کد ملی معتبر نیست؛ رقم کنترل (رقم آخر) با سایر ارقام همخوان نیست.";
+    }
     var phone = window.S.toEnDigits($("phone").value).trim();
     if (!/^09[0-9]{9}$/.test(phone)) errors.phone = "شماره تماس باید ۱۱ رقم و با ۰۹ شروع شود.";
     if (!$("province_id").value) errors.province_id = "استان را انتخاب کنید.";
@@ -293,6 +297,20 @@
     });
     $("todayBtn").addEventListener("click", function () { setDateStr(boot.todayJalali); });
 
+    // اعتبارسنجی زنده کد ملی با الگوریتم اصلاح‌شده (بلافاصله پس از خروج از فیلد)
+    $("national_code").addEventListener("change", function () {
+      var code = window.S.toEnDigits(this.value).trim();
+      var box = $("f-national_code");
+      var err = box.querySelector(".err");
+      if (!code) { box.classList.remove("invalid"); if (err) err.textContent = ""; return; }
+      if (!/^[0-9]{8,10}$/.test(code) || !window.S.checkCodeMeli(code)) {
+        box.classList.add("invalid");
+        if (err) err.textContent = "کد ملی معتبر نیست؛ رقم کنترل (رقم آخر) با سایر ارقام همخوان نیست.";
+      } else {
+        box.classList.remove("invalid");
+        if (err) err.textContent = "";
+      }
+    });
     document.querySelectorAll('input[name="contact_option_id"]').forEach(function (r) {
       r.addEventListener("change", refreshRatingLock);
     });
