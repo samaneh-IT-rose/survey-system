@@ -175,7 +175,16 @@ html[data-mode="dark"] .field .err { color: #f87171; }
 .hint { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
 
 .datebox { display: flex; gap: 6px; }
-.datebox select { flex: 1; min-width: 0; }
+/* فیلد تاریخ دو ستون از شبکه را می‌گیرد تا هر سه کادر جا شوند */
+#f-survey_date { grid-column: span 2; }
+@media (max-width: 560px) { #f-survey_date { grid-column: auto; } }
+.datebox select { flex: 1 1 0; min-width: 0; padding-inline: 8px; }
+/* عرض کافی برای بلندترین متن هر کادر: ۱۴۰۵ / اردیبهشت / ۰۵
+   بدون این حداقل‌ها، متنِ کادر سال در برخی تم‌ها بریده می‌شود و
+   به‌جای «۱۴۰۵» فقط «۵» دیده می‌شود. */
+.datebox #jy { min-width: 84px; }
+.datebox #jm { min-width: 104px; }
+.datebox #jd { min-width: 70px; }
 .datebox .todaybtn {
   flex: 0 0 auto; border: 1px solid var(--border); background: var(--soft); color: var(--primary);
   border-radius: var(--radius-sm); padding: 0 10px; cursor: pointer; font-size: 12px; font-weight: 500;
