@@ -149,7 +149,7 @@ if ($LASTEXITCODE -ne 0) {
     & $VPY -m playwright install chromium
     if ($LASTEXITCODE -ne 0) { Write-Host "ERROR: Chromium download failed." -ForegroundColor Red; Pause; exit 1 }
 }
-icacls "C:\playwright-browsers" /grant *S-1-5-18:(OI)(CI)F /T | Out-Null
+icacls "C:\playwright-browsers" /grant "*S-1-5-18:(OI)(CI)F" /T | Out-Null
 
 # ---------- 6) Database + base data ----------
 Write-Host ">> [6/8] Creating database and base data..."

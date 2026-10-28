@@ -56,7 +56,7 @@ if ($LASTEXITCODE -ne 0) {
     if ($LASTEXITCODE -ne 0) { Write-Host "ERROR: Chromium download failed. Check internet connection." -ForegroundColor Red; Pause; exit 1 }
 }
 # make sure the SYSTEM account can use this folder
-icacls $BROWSERS /grant *S-1-5-18:(OI)(CI)F /T | Out-Null
+icacls $BROWSERS /grant "*S-1-5-18:(OI)(CI)F" /T | Out-Null
 Write-Host "   Chromium installed in global folder." -ForegroundColor Green
 
 # quick local launch test (inside this script's environment)
