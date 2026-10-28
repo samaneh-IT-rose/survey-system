@@ -101,7 +101,7 @@ try {
 $sid = (& $VPY -c "import sqlite3; con = sqlite3.connect(r'C:\survey-system\data\survey.db'); row = con.execute('select max(id) from surveys').fetchone(); print(row[0] if row and row[0] else 0)").ToString().Trim()
 if ($sid -and "$sid" -ne "0") {
     try {
-        $pdf = Invoke-WebRequest "http://127.0.0.1:$BACKEND/api/surveys/$sid/pdf" -UseBasicParsing -TimeoutSec 90
+        $pdf = Invoke-WebRequest "http://127.0.0.1:$BACKEND/app/api/surveys/$sid/pdf" -UseBasicParsing -TimeoutSec 90
         $bytes = $pdf.Content
         if ($bytes.Length -gt 1000 -and $bytes[0] -eq 0x25 -and $bytes[1] -eq 0x50) {
             Write-Host "   PDF TEST PASSED - record $sid returned a real PDF ($([math]::Round($bytes.Length/1KB)) KB)." -ForegroundColor Green
