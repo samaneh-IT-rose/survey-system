@@ -18,6 +18,7 @@ from pathlib import Path
 from fastapi import HTTPException
 
 from ..config import SELF_BASE_URL
+from ..utils.security import SESSION_COOKIE
 
 logger = logging.getLogger("survey.pdf")
 
@@ -59,13 +60,25 @@ def _find_chromium_exe() -> Path | None:
     return None
 
 
-def _render_sync(url: str) -> bytes:
+def _render_sync(url: str, session_cookie: str | None = None) -> bytes:
     from playwright.sync_api import sync_playwright
 
     with sync_playwright() as p:
         browser = p.chromium.launch(args=["--no-sandbox", "--font-render-hinting=none"])
         try:
-            page = browser.new_page()
+            context = browser.new_context()
+            if session_cookie:
+                # انتقال سشن کاربر به مرورگر تا صفحهٔ چاپِ محافظت‌شده باز شود
+                context.add_cookies(
+                    [
+                        {
+                            "name": SESSION_COOKIE,
+                            "value": session_cookie,
+                            "url": url,
+                        }
+                    ]
+                )
+            page = context.new_page()
             page.set_default_timeout(30000)
             # بارگذاری کامل منابع (لوگو، فونت‌ها) پیش از تولید PDF؛
             # اگر networkidle به‌خاطر منبع کند شکست خورد، با load ادامه می‌دهیم
@@ -87,7 +100,7 @@ def _render_sync(url: str) -> bytes:
     return pdf
 
 
-async def render_pdf_for_record(survey_id: int) -> bytes:
+async def render_pdf_for_record(survey_id: int, session_cookie: str | None = None) -> bytes:
     """رندر نمای چاپ رکورد و تبدیل به PDF — با پیام خطای دقیق و قابل‌فهم."""
     url = f"{SELF_BASE_URL}/app/print/{survey_id}"
 
@@ -113,7 +126,7 @@ async def render_pdf_for_record(survey_id: int) -> bytes:
     # ۳) رندر واقعی
     async with _pdf_semaphore:
         try:
-            return await asyncio.to_thread(_render_sync, url)
+            return await asyncio.to_thread(_render_sync, url, session_cookie)
         except HTTPException:
             raise
         except ImportError:

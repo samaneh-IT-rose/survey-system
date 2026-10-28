@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" data-mode="light" data-palette="pink">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ورود — {{ app_title }}</title>
+  <link rel="icon" href="{{ logo_url }}" type="image/png">
+  <link rel="stylesheet" href="/app/static/css/styles.css">
+</head>
+<body class="loginbody">
+  <div class="loginwrap">
+    <div class="logincard">
+      <img class="loginlogo" src="{{ logo_url }}" alt="لوگو" width="72" height="72">
+      <h1 class="logintitle">{{ org_name }}</h1>
+      <p class="loginsub">{{ app_title }}</p>
+
+      {% if error %}
+      <div class="loginerror" role="alert">{{ error }}</div>
+      {% endif %}
+
+      <form method="post" action="{{ prefix }}/login" class="loginform">
+        <label class="field">
+          <span>نام کاربری</span>
+          <input type="text" name="username" value="{{ username or '' }}" required autofocus
+                 autocomplete="username" dir="ltr" placeholder="admin">
+        </label>
+        <label class="field">
+          <span>رمز عبور</span>
+          <input type="password" name="password" required
+                 autocomplete="current-password" dir="ltr" placeholder="••••••••">
+        </label>
+        <button type="submit" class="btn primary loginbtn">ورود به سامانه</button>
+      </form>
+
+      <p class="loginfoot">سامانه فرم نظرسنجی تلفنی — <bdi>{{ today }}</bdi></p>
+    </div>
+  </div>
+</body>
+</html>

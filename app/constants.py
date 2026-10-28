@@ -16,3 +16,14 @@ RATING_SCORE_TO_LABEL = {score: label for score, label in RATING_OPTIONS}
 
 # برچسب پاسخ خالی در داشبورد — جداگانه گزارش می‌شود و از محاسبه میانگین حذف می‌گردد
 NO_ANSWER_LABEL = "بدون پاسخ"
+
+# ---------- نقش‌های کاربران ----------
+ROLE_ADMIN = "admin"        # همه‌چیز + مدیریت کاربران/الگو/کلیدها/لاگ
+ROLE_OPERATOR = "operator"  # ثبت و ویرایش فرم‌ها + آرشیو و داشبورد + خروجی اکسل
+ROLE_VIEWER = "viewer"      # فقط مشاهده داشبورد و آرشیو
+
+ROLE_LABELS: dict[str, str] = {
+    ROLE_ADMIN: "مدیر",
+    ROLE_OPERATOR: "کارشناس",
+    ROLE_VIEWER: "مشاهده‌گر",
+}

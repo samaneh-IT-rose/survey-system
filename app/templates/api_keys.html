@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}کلیدهای وب‌سرویس — {{ app_title }}{% endblock %}
+{% block content %}
+<div class="pagehead">
+  <h1>کلیدهای وب‌سرویس</h1>
+  <button class="btn primary" id="btnNewKey">+ کلید جدید</button>
+</div>
+
+<div class="card mutedcard">
+  <p>هر سیستم متصل (مثل نرم‌افزار مرکزی) یک کلید جداگانه می‌گیرد. کلید در هدر <bdi dir="ltr">X-API-Key</bdi> ارسال می‌شود و مستندات کامل در آدرس <bdi dir="ltr">/docs</bdi> موجود است. کلید کامل فقط هنگام ساخت یک‌بار نمایش داده می‌شود.</p>
+</div>
+
+<div class="keybanner" id="keyBanner" hidden>
+  <b>کلید تازه ساخته شد — همین حالا کپی کن (بعداً دیگر نمایش داده نمی‌شود):</b>
+  <code dir="ltr" id="newKeyValue"></code>
+  <button class="btn sm" id="copyKeyBtn">کپی</button>
+</div>
+
+<div class="card">
+  <table class="datatable" id="keysTable">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>نام سیستم متصل</th>
+        <th>شناسهٔ کلید</th>
+        <th>وضعیت</th>
+        <th>آخرین استفاده</th>
+        <th>عملیات</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ asset('static/js/apikeys.js') }}"></script>{% endblock %}

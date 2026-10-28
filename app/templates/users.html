@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}مدیریت کاربران — {{ app_title }}{% endblock %}
+{% block content %}
+<div class="pagehead">
+  <h1>مدیریت کاربران</h1>
+  <button class="btn primary" id="btnNewUser">+ کاربر جدید</button>
+</div>
+
+<div class="card">
+  <table class="datatable" id="usersTable">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>نام و نام خانوادگی</th>
+        <th>نام کاربری</th>
+        <th>نقش</th>
+        <th>وضعیت</th>
+        <th>آخرین ورود</th>
+        <th>عملیات</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<!-- مودال کاربر جدید/ویرایش -->
+<div class="modal-backdrop" id="userModal" hidden>
+  <div class="modal">
+    <h2 id="userModalTitle">کاربر جدید</h2>
+    <form id="userForm">
+      <input type="hidden" id="u_id">
+      <label class="field"><span>نام کاربری (لاتین) <b id="u_username_hint">*</b></span>
+        <input type="text" id="u_username" dir="ltr" autocomplete="off" required>
+      </label>
+      <label class="field"><span>نام و نام خانوادگی</span>
+        <input type="text" id="u_fullname" required>
+      </label>
+      <label class="field"><span>نقش</span>
+        <select id="u_role">
+          <option value="operator">کارشناس — ثبت و ویرایش فرم</option>
+          <option value="viewer">مشاهده‌گر — فقط داشبورد و آرشیو</option>
+          <option value="admin">مدیر — همهٔ دسترسی‌ها</option>
+        </select>
+      </label>
+      <label class="field"><span id="u_password_label">رمز عبور اولیه (حداقل ۶ نویسه) — کاربر در اولین ورود مجبور به تغییر می‌شود</span>
+        <input type="text" id="u_password" dir="ltr" autocomplete="off" minlength="6" required>
+      </label>
+      <div class="modal-actions">
+        <button type="submit" class="btn primary">ذخیره</button>
+        <button type="button" class="btn" id="userCancel">انصراف</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ asset('static/js/users.js') }}"></script>{% endblock %}

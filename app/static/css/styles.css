@@ -336,3 +336,95 @@ footer.sitefoot {
 }
 
 /* حالت چاپ مرورگر فقط برای صفحه /app/print/{id} استفاده می‌شود (print.css در همان صفحه) */
+
+/* ================= بخش جدید: ورود، کاربران، لاگ، کلیدهای API ================= */
+
+/* --- صفحهٔ ورود و تغییر رمز --- */
+.loginbody { min-height: 100vh; display: flex; }
+.loginwrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px;
+  background: linear-gradient(160deg, var(--bg) 0%, var(--surface) 100%); }
+.logincard { width: 100%; max-width: 400px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 18px; padding: 32px 28px; box-shadow: var(--shadow, 0 10px 30px rgba(0,0,0,.08)); text-align: center; }
+.loginlogo { border-radius: 16px; object-fit: cover; }
+.logintitle { margin: 12px 0 2px; font-size: 20px; color: var(--primary); }
+.loginsub { margin: 0 0 18px; color: var(--muted); font-size: 13px; }
+.loginerror { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 10px;
+  padding: 10px 12px; font-size: 13px; margin-bottom: 14px; text-align: right; }
+.loginnotice { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 10px;
+  padding: 10px 12px; font-size: 13px; margin-bottom: 14px; text-align: right; }
+html[data-mode="dark"] .loginerror { background: #2a1414; color: #f87171; border-color: #7f2f2f; }
+html[data-mode="dark"] .loginnotice { background: #101c33; color: #93c5fd; border-color: #1e3a5f; }
+.loginform { display: flex; flex-direction: column; gap: 12px; text-align: right; }
+.loginform .field span { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 5px; }
+.loginform .field input, .loginform .field select {
+  width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px;
+  background: var(--bg); color: var(--text); font: inherit; box-sizing: border-box; }
+.loginform .field input:focus { outline: 2px solid var(--primary); outline-offset: 1px; }
+.loginbtn { width: 100%; padding: 11px; font-size: 15px; margin-top: 4px; }
+.loginfoot { margin-top: 18px; color: var(--muted); font-size: 12px; }
+.mutedlink { color: var(--muted); text-decoration: none; }
+.mutedlink:hover { color: var(--primary); }
+.mutedcard { color: var(--muted); font-size: 13.5px; }
+.mutedcard p { margin: 0; line-height: 1.9; }
+
+/* --- چیپ کاربر در نوار بالا --- */
+.userchip { display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--border);
+  border-radius: 999px; padding: 3px 10px 3px 6px; background: var(--bg); }
+.userchip-avatar { width: 26px; height: 26px; border-radius: 50%; background: var(--primary);
+  color: var(--on-primary); display: inline-flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; }
+.userchip-name { font-size: 12.5px; font-weight: 600; }
+.userchip-role { font-size: 11px; padding: 2px 8px; border-radius: 999px; }
+.userchip-role.role-admin { background: #f3e8ff; color: #7c3aed; }
+.userchip-role.role-operator { background: #e0f2fe; color: #0369a1; }
+.userchip-role.role-viewer { background: #f1f5f9; color: #64748b; }
+html[data-mode="dark"] .userchip-role.role-admin { background: #3b1d5e; color: #d8b4fe; }
+html[data-mode="dark"] .userchip-role.role-operator { background: #0c2a42; color: #7dd3fc; }
+html[data-mode="dark"] .userchip-role.role-viewer { background: #1e293b; color: #94a3b8; }
+.userchip-logout { font-size: 12px; color: var(--muted); text-decoration: none; border-inline-start: 1px solid var(--border); padding-inline-start: 8px; }
+.userchip-logout:hover { color: #dc2626; }
+@media (max-width: 900px) { .userchip-name { display: none; } }
+
+/* --- جدول داده (کاربران/لاگ/کلیدها) --- */
+.datatable { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.datatable th, .datatable td { padding: 10px 12px; text-align: right; border-bottom: 1px solid var(--border); }
+.datatable th { color: var(--muted); font-weight: 600; font-size: 12.5px; background: var(--bg); }
+.datatable tbody tr:hover { background: var(--bg); }
+.datatable td.actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.datatable td.empty { text-align: center; color: var(--muted); padding: 24px; }
+.datatable .nowrap { white-space: nowrap; }
+.rolebadge { font-size: 11.5px; padding: 3px 10px; border-radius: 999px; }
+.rolebadge.role-admin { background: #f3e8ff; color: #7c3aed; }
+.rolebadge.role-operator { background: #e0f2fe; color: #0369a1; }
+.rolebadge.role-viewer { background: #f1f5f9; color: #64748b; }
+html[data-mode="dark"] .rolebadge.role-admin { background: #3b1d5e; color: #d8b4fe; }
+html[data-mode="dark"] .rolebadge.role-operator { background: #0c2a42; color: #7dd3fc; }
+html[data-mode="dark"] .rolebadge.role-viewer { background: #1e293b; color: #94a3b8; }
+.badge.ok { color: #047857; background: #d1fae5; }
+.badge.off { color: #6b7280; background: #f3f4f6; }
+html[data-mode="dark"] .badge.ok { background: #0d2b1e; color: #6ee7b7; }
+html[data-mode="dark"] .badge.off { background: #26303c; color: #9ca3af; }
+
+/* --- مودال --- */
+.modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, .45); display: flex;
+  align-items: center; justify-content: center; z-index: 60; padding: 16px; }
+.modal { width: 100%; max-width: 440px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 22px; box-shadow: 0 20px 50px rgba(0,0,0,.2); }
+.modal h2 { margin: 0 0 16px; font-size: 17px; color: var(--primary); }
+.modal .field { display: block; margin-bottom: 12px; }
+.modal .field span { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 5px; }
+.modal .field input, .modal .field select { width: 100%; padding: 9px 12px; border: 1px solid var(--border);
+  border-radius: 10px; background: var(--bg); color: var(--text); font: inherit; box-sizing: border-box; }
+.modal-actions { display: flex; gap: 8px; margin-top: 16px; }
+
+/* --- فیلتر لاگ و صفحه‌بندی و بنر کلید --- */
+.filterrow { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.filterrow select, .filterrow input { padding: 8px 12px; border: 1px solid var(--border); border-radius: 10px;
+  background: var(--surface); color: var(--text); font: inherit; }
+.filterrow input { min-width: 180px; }
+.keybanner { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 12px; padding: 14px 16px;
+  margin-bottom: 14px; font-size: 13.5px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.keybanner code { background: #fff; border: 1px solid #fcd34d; border-radius: 8px; padding: 6px 10px;
+  font-size: 13px; user-select: all; }
+html[data-mode="dark"] .keybanner { background: #33230a; border-color: #92600a; color: #fbbf24; }
+html[data-mode="dark"] .keybanner code { background: #1a1408; border-color: #92600a; color: #fde68a; }

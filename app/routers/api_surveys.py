@@ -5,14 +5,16 @@ from __future__ import annotations
 import datetime as dt
 from datetime import timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
+from ..auth import api_admin, api_staff, api_user
 from ..constants import RATING_LABEL_TO_SCORE
 from ..database import get_db
-from ..models import Survey, SurveyAnswer
+from ..models import Survey, SurveyAnswer, User
 from ..services.validation import validate_survey_payload
+from ..utils.activity import log_activity
 from ..utils.jalali import gdate_to_jalali_str, jalali_to_gregorian, parse_jalali_str
 
 router = APIRouter(prefix="/api/surveys", tags=["surveys"])
@@ -90,7 +92,7 @@ def _save_answers(db: Session, survey: Survey, clean: dict) -> None:
 
 
 @router.post("")
-def create_survey(payload: dict, db: Session = Depends(get_db)):
+def create_survey(payload: dict, request: Request, user: User = Depends(api_staff), db: Session = Depends(get_db)):
     clean, errors = validate_survey_payload(db, payload)
     if errors:
         raise HTTPException(status_code=422, detail={"message": "اطلاعات فرم معتبر نیست.", "errors": errors})
@@ -109,6 +111,7 @@ def create_survey(payload: dict, db: Session = Depends(get_db)):
     db.flush()
     _save_answers(db, survey, clean)
     db.commit()
+    log_activity(db, request, user, "survey_create", f"رکورد {survey.id} — {survey.first_name} {survey.last_name}")
     fresh = db.scalars(select(Survey).where(Survey.id == survey.id)).unique().one()
     return {"id": fresh.id, "message": "فرم با موفقیت ذخیره شد.", "record": serialize_survey(fresh)}
 
@@ -123,6 +126,7 @@ def list_surveys(
     date_to: str | None = None,
     page: int = 1,
     per_page: int = 10,
+    user: User = Depends(api_user),
     db: Session = Depends(get_db),
 ):
     per_page = max(1, min(per_page, 100))
@@ -174,12 +178,14 @@ def list_surveys(
 
 @router.get("/export/excel")
 def export_excel(
+    request: Request,
     q: str | None = None,
     province_id: int | None = None,
     county_id: int | None = None,
     contact_option_id: int | None = None,
     date_from: str | None = None,
     date_to: str | None = None,
+    user: User = Depends(api_staff),
     db: Session = Depends(get_db),
 ):
     """خروجی اکسل همان فیلترهای فهرست (بدون صفحه‌بندی)."""
@@ -194,6 +200,7 @@ def export_excel(
         date_to=date_to,
     )
     content, filename = build_excel(db, filters)
+    log_activity(db, request, user, "excel_export", f"خروجی {filename}")
 
     return Response(
         content=content,
@@ -203,7 +210,7 @@ def export_excel(
 
 
 @router.get("/{survey_id}")
-def get_survey(survey_id: int, db: Session = Depends(get_db)):
+def get_survey(survey_id: int, user: User = Depends(api_user), db: Session = Depends(get_db)):
     s = db.get(Survey, survey_id)
     if s is None:
         raise HTTPException(status_code=404, detail={"message": "رکورد یافت نشد."})
@@ -212,7 +219,7 @@ def get_survey(survey_id: int, db: Session = Depends(get_db)):
 
 @router.patch("/{survey_id}")
 @router.put("/{survey_id}")
-def update_survey(survey_id: int, payload: dict, db: Session = Depends(get_db)):
+def update_survey(survey_id: int, payload: dict, request: Request, user: User = Depends(api_staff), db: Session = Depends(get_db)):
     s = db.get(Survey, survey_id)
     if s is None:
         raise HTTPException(status_code=404, detail={"message": "رکورد یافت نشد."})
@@ -230,18 +237,21 @@ def update_survey(survey_id: int, payload: dict, db: Session = Depends(get_db)):
     s.contact_option_id = clean["contact_option_id"]
     _save_answers(db, s, clean)
     db.commit()
+    log_activity(db, request, user, "survey_update", f"رکورد {survey_id} — {s.first_name} {s.last_name}")
     # بارگذاری تازهٔ رکورد با پاسخ‌های جدید
     fresh = db.scalars(select(Survey).where(Survey.id == survey_id)).unique().one()
     return {"id": fresh.id, "message": "تغییرات با موفقیت ذخیره شد.", "record": serialize_survey(fresh)}
 
 
 @router.delete("/{survey_id}")
-def delete_survey(survey_id: int, db: Session = Depends(get_db)):
+def delete_survey(survey_id: int, request: Request, user: User = Depends(api_admin), db: Session = Depends(get_db)):
     s = db.get(Survey, survey_id)
     if s is None:
         raise HTTPException(status_code=404, detail={"message": "رکورد یافت نشد."})
+    detail = f"رکورد {survey_id} — {s.first_name} {s.last_name}"
     db.delete(s)
     db.commit()
+    log_activity(db, request, user, "survey_delete", detail)
     return {"message": "رکورد حذف شد.", "id": survey_id}
 
 

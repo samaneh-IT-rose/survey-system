@@ -3,10 +3,11 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
+from ..auth import api_user
 from ..database import get_db
 from ..services.dashboard import build_dashboard
 
-router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
+router = APIRouter(prefix="/api/dashboard", tags=["dashboard"], dependencies=[Depends(api_user)])
 
 
 @router.get("")

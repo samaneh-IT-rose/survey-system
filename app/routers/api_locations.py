@@ -4,10 +4,11 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from ..auth import api_user
 from ..database import get_db
 from ..models import County, Province
 
-router = APIRouter(prefix="/api", tags=["locations"])
+router = APIRouter(prefix="/api", tags=["locations"], dependencies=[Depends(api_user)])
 
 
 @router.get("/provinces")

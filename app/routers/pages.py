@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
-"""صفحات رابط کاربری (Jinja2) — همه زیر پیشوند /app."""
+"""صفحات رابط کاربری (Jinja2) — همه زیر پیشوند /app و با کنترل دسترسی."""
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from ..auth import page_admin, page_staff, page_user
 from ..config import APP_PREFIX, APP_TITLE, BASE_DIR, LOGO_URL, ORG_NAME
 from ..database import get_db
-from ..models import Survey
+from ..models import Survey, User
 from ..utils.jalali import gregorian_to_jalali, is_jalali_leap, today_jalali_str
 
 templates = Jinja2Templates(directory=str(BASE_DIR / "app" / "templates"))
@@ -33,7 +34,7 @@ templates.env.globals["asset"] = _asset_url
 router = APIRouter(prefix=APP_PREFIX, tags=["pages"])
 
 
-def _ctx(**extra):
+def _ctx(user: User | None = None, **extra):
     ctx = {
         "app_title": APP_TITLE,
         "org_name": ORG_NAME,
@@ -41,6 +42,7 @@ def _ctx(**extra):
         "today": today_jalali_str(),
         "prefix": APP_PREFIX,
         "asset": _asset_url,
+        "user": user,
     }
     ctx.update(extra)
     return ctx
@@ -52,7 +54,7 @@ def _year_range() -> list[int]:
 
 
 @router.get("/", response_class=HTMLResponse)
-def form_page(request: Request, db: Session = Depends(get_db)):
+def form_page(request: Request, user: User = Depends(page_staff), db: Session = Depends(get_db)):
     from ..models import ContactOption, Question
 
     questions = db.scalars(
@@ -65,6 +67,7 @@ def form_page(request: Request, db: Session = Depends(get_db)):
         request,
         "form.html",
         _ctx(
+            user,
             page_title="ثبت فرم نظرسنجی",
             questions=[{"id": q.id, "text": q.text} for q in questions],
             contact_options=[
@@ -78,27 +81,42 @@ def form_page(request: Request, db: Session = Depends(get_db)):
 
 
 @router.get("/records", response_class=HTMLResponse)
-def records_page(request: Request):
-    return templates.TemplateResponse(request, "records.html", _ctx(page_title="آرشیو فرم‌ها"))
+def records_page(request: Request, user: User = Depends(page_user)):
+    return templates.TemplateResponse(request, "records.html", _ctx(user, page_title="آرشیو فرم‌ها"))
 
 
 @router.get("/dashboard", response_class=HTMLResponse)
-def dashboard_page(request: Request):
-    return templates.TemplateResponse(request, "dashboard.html", _ctx(page_title="داشبورد آماری"))
+def dashboard_page(request: Request, user: User = Depends(page_user)):
+    return templates.TemplateResponse(request, "dashboard.html", _ctx(user, page_title="داشبورد آماری"))
 
 
 @router.get("/template", response_class=HTMLResponse)
-def template_page(request: Request):
-    return templates.TemplateResponse(request, "template_admin.html", _ctx(page_title="مدیریت الگوی فرم"))
+def template_page(request: Request, user: User = Depends(page_admin)):
+    return templates.TemplateResponse(request, "template_admin.html", _ctx(user, page_title="مدیریت الگوی فرم"))
+
+
+@router.get("/users", response_class=HTMLResponse)
+def users_page(request: Request, user: User = Depends(page_admin)):
+    return templates.TemplateResponse(request, "users.html", _ctx(user, page_title="مدیریت کاربران"))
+
+
+@router.get("/logs", response_class=HTMLResponse)
+def logs_page(request: Request, user: User = Depends(page_admin)):
+    return templates.TemplateResponse(request, "logs.html", _ctx(user, page_title="لاگ فعالیت‌ها"))
+
+
+@router.get("/api-keys", response_class=HTMLResponse)
+def api_keys_page(request: Request, user: User = Depends(page_admin)):
+    return templates.TemplateResponse(request, "api_keys.html", _ctx(user, page_title="کلیدهای وب‌سرویس"))
 
 
 @router.get("/print/{survey_id}", response_class=HTMLResponse)
-def print_page(survey_id: int, request: Request, db: Session = Depends(get_db)):
+def print_page(survey_id: int, request: Request, user: User = Depends(page_user), db: Session = Depends(get_db)):
     from ..models import Survey
     from ..services.sheet import build_sheet_context
 
     s = db.get(Survey, survey_id)
     if s is None:
         raise HTTPException(404, detail="رکورد یافت نشد.")
-    ctx = _ctx(**build_sheet_context(db, s, interactive=True))
+    ctx = _ctx(user, **build_sheet_context(db, s, interactive=True))
     return templates.TemplateResponse(request, "sheet.html", ctx)

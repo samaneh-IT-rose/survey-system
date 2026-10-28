@@ -132,3 +132,59 @@ class SurveyAnswer(Base):
 
     survey: Mapped["Survey"] = relationship(back_populates="answers")
     question: Mapped["Question"] = relationship(back_populates="answers")
+
+
+class User(Base):
+    """کاربر سامانه با نقش (admin / operator / viewer).
+
+    - رمز به‌صورت PBKDF2-SHA256 ذخیره می‌شود (بدون وابستگی بیرونی).
+    - auth_source برای اتصال آینده به SSO است: «local» یعنی رمز داخلی؛
+      بعداً می‌تواند «sso» شود بدون تغییر ساختار جداول.
+    """
+
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(String(60), unique=True, nullable=False, index=True)
+    password_hash: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    full_name: Mapped[str] = mapped_column(String(120), nullable=False, default="")
+    role: Mapped[str] = mapped_column(String(20), nullable=False, default="viewer")
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    # اگر True باشد، کاربر تا تغییر رمز به هیچ صفحه‌ای جز تغییر رمز راه ندارد
+    must_change_password: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    auth_source: Mapped[str] = mapped_column(String(20), nullable=False, default="local")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_now_tz)
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class ApiKey(Base):
+    """کلیدهای وب‌سرویس برای سیستم‌های دیگر — هر سیستم یک کلید جداگانه.
+
+    فقط هش SHA-256 کلید ذخیره می‌شود؛ کلید کامل فقط هنگام ساخت یک‌بار نمایش
+    داده می‌شود.
+    """
+
+    __tablename__ = "api_keys"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    key_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
+    key_prefix: Mapped[str] = mapped_column(String(12), nullable=False, default="")
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_now_tz)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class ActivityLog(Base):
+    """لاگ فعالیت‌ها (چه‌کسی، چه‌زمانی، چه‌کرد) — برای مدیر قابل مشاهده."""
+
+    __tablename__ = "activity_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # نام کاربری جدا از کلید خارجی ذخیره می‌شود تا حذف کاربر، لاگ را خراب نکند
+    username: Mapped[str] = mapped_column(String(60), nullable=False, default="")
+    action: Mapped[str] = mapped_column(String(60), nullable=False, index=True)
+    detail: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    ip: Mapped[str] = mapped_column(String(50), nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_now_tz, index=True)

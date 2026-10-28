@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}لاگ فعالیت‌ها — {{ app_title }}{% endblock %}
+{% block content %}
+<div class="pagehead">
+  <h1>لاگ فعالیت‌ها</h1>
+  <div class="filterrow">
+    <select id="f_action">
+      <option value="">همهٔ رویدادها</option>
+      <option value="login_success">ورود موفق</option>
+      <option value="login_failed">ورود ناموفق</option>
+      <option value="logout">خروج</option>
+      <option value="survey_create">ثبت فرم</option>
+      <option value="survey_update">ویرایش فرم</option>
+      <option value="survey_delete">حذف فرم</option>
+      <option value="excel_export">خروجی اکسل</option>
+      <option value="user_create">ایجاد کاربر</option>
+      <option value="user_update">ویرایش کاربر</option>
+      <option value="password_changed">تغییر رمز</option>
+      <option value="apikey_create">ایجاد کلید</option>
+      <option value="apikey_revoke">لغو کلید</option>
+      <option value="v1_survey_create">ثبت از وب‌سرویس</option>
+    </select>
+    <input type="text" id="f_username" placeholder="جستجوی نام کاربری">
+    <button class="btn" id="f_apply">اعمال</button>
+  </div>
+</div>
+
+<div class="card">
+  <table class="datatable" id="logsTable">
+    <thead>
+      <tr>
+        <th>زمان</th>
+        <th>کاربر</th>
+        <th>رویداد</th>
+        <th>توضیح</th>
+        <th>IP</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <div class="pager" id="logsPager"></div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ asset('static/js/logs.js') }}"></script>{% endblock %}
