@@ -406,6 +406,8 @@ html[data-mode="dark"] .badge.ok { background: #0d2b1e; color: #6ee7b7; }
 html[data-mode="dark"] .badge.off { background: #26303c; color: #9ca3af; }
 
 /* --- مودال --- */
+/* خاصیت hidden همیشه برنده باشد — باگ پنجرهٔ کاربران که بسته نمی‌شد */
+[hidden] { display: none !important; }
 .modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, .45); display: flex;
   align-items: center; justify-content: center; z-index: 60; padding: 16px; }
 .modal { width: 100%; max-width: 440px; background: var(--surface); border: 1px solid var(--border);
