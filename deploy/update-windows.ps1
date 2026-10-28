@@ -1,20 +1,19 @@
 # ==============================================================
-#  Survey System - WINDOWS UPDATE SCRIPT
+#  Survey System - WINDOWS UPDATE SCRIPT  (v2 - robust zip layout)
 #  Updates the app code on C:\survey-system.
 #  WITHOUT touching: database (data\), logs, venv, run-server.bat
 #
 #  Two ways to get the new code:
 #    A) LOCAL ZIP (recommended, works offline):
-#       put the new "survey-system.zip" in the SAME folder as this script,
-#       then run the script. It will use the local zip.
+#       put the new "survey-system.zip" in the SAME folder as this script
+#       (or in your Downloads folder), then run the script.
 #    B) GITHUB (fallback): if no local zip is found, it downloads main branch.
 #
-#  What it does:
-#    1) Stops the SurveySystem task
-#    2) Backs up the current app folder (one click rollback possible)
-#    3) Takes code from local survey-system.zip OR downloads from GitHub
-#    4) Copies app/ scripts/ deploy/ requirements.txt README.md
-#    5) Restarts the service and checks health
+#  Works with BOTH zip layouts:
+#    - files at zip root (app\, scripts\, ...)
+#    - one wrapper folder (survey-system\app\, ...)
+#  Uses robocopy /MIR so old unused files are removed and the app
+#  folder stays exactly like the new version.
 #
 #  Run: right-click PowerShell -> Run as Administrator ->
 #       powershell -ExecutionPolicy Bypass -File .\update-windows.ps1
@@ -27,7 +26,7 @@ $APPDIR   = "C:\survey-system"
 $REPO     = "https://github.com/samaneh-IT-rose/survey-system/archive/refs/heads/main.zip"
 $BACKEND  = 3010
 
-# مسیر احتمالی zip محلی: کنار همین اسکریپت
+# مسیرهای احتمالی zip محلی: کنار همین اسکریپت یا Downloads
 $LOCALZIP = Join-Path $PSScriptRoot "survey-system.zip"
 if (-not (Test-Path $LOCALZIP)) { $LOCALZIP = "$HOME\Downloads\survey-system.zip" }
 $USELOCAL = Test-Path $LOCALZIP
@@ -67,28 +66,49 @@ Copy-Item "$APPDIR\app" "$backup\app" -Recurse -Force
 if (Test-Path "$APPDIR\scripts") { Copy-Item "$APPDIR\scripts" "$backup\scripts" -Recurse -Force }
 
 # ---------- 3) source code (local zip or GitHub) ----------
+Write-Host ">> [3/5] Preparing the new code..."
 $zip = "$env:TEMP\survey-update.zip"
 $ex  = "$env:TEMP\ss_update"
 if ($USELOCAL) {
-    Write-Host ">> [3/5] Using the local zip found next to the script..."
+    Write-Host "   Using the local zip found on disk."
     Copy-Item $LOCALZIP $zip -Force
 } else {
-    Write-Host ">> [3/5] No local zip found - downloading latest code from GitHub..."
+    Write-Host "   No local zip found - downloading from GitHub..."
     Invoke-WebRequest $REPO -OutFile $zip -UseBasicParsing
 }
 if (Test-Path $ex) { Remove-Item $ex -Recurse -Force }
 Expand-Archive $zip $ex -Force
-$src = (Get-ChildItem $ex | Select-Object -First 1).FullName
+
+# detect layout: files at zip root, or inside one wrapper folder
+if (Test-Path "$ex\app") {
+    $src = $ex
+} else {
+    $cand = Get-ChildItem $ex -Directory | Select-Object -First 1
+    if ($cand -and (Test-Path (Join-Path $cand.FullName "app"))) {
+        $src = $cand.FullName
+    } else {
+        Write-Host "ERROR: could not find 'app' folder inside the zip. Send this message to the developer." -ForegroundColor Red
+        Pause; exit 1
+    }
+}
 
 # ---------- 4) copy new code (database and settings are NOT touched) ----------
 Write-Host ">> [4/5] Copying new files..."
-Copy-Item "$src\app" "$APPDIR\app" -Recurse -Force
-if (Test-Path "$src\scripts") { Copy-Item "$src\scripts" "$APPDIR\scripts" -Recurse -Force }
-if (Test-Path "$src\deploy")  { Copy-Item "$src\deploy"  "$APPDIR\deploy"  -Recurse -Force }
+robocopy "$src\app" "$APPDIR\app" /MIR /NFL /NDL /NJH /NJS | Out-Null
+if ($LASTEXITCODE -ge 8) { Write-Host "ERROR: robocopy failed on app (code $LASTEXITCODE)" -ForegroundColor Red; Pause; exit 1 }
+if (Test-Path "$src\scripts") { robocopy "$src\scripts" "$APPDIR\scripts" /MIR /NFL /NDL /NJH /NJS | Out-Null }
+if (Test-Path "$src\deploy")  { robocopy "$src\deploy"  "$APPDIR\deploy"  /MIR /NFL /NDL /NJH /NJS | Out-Null }
 Copy-Item "$src\requirements.txt" "$APPDIR\requirements.txt" -Force
 Copy-Item "$src\README.md" "$APPDIR\README.md" -Force
 Remove-Item $ex -Recurse -Force
 if (-not $USELOCAL) { Remove-Item $zip -Force }
+
+# sanity check: a file that only exists in the NEW version
+if (Test-Path "$APPDIR\app\auth.py") {
+    Write-Host "   New code verified (auth.py found)." -ForegroundColor Green
+} else {
+    Write-Host "WARNING: app\auth.py not found - the zip may be old. Tell the developer." -ForegroundColor Yellow
+}
 
 # ---------- 5) restart + health check ----------
 Write-Host ">> [5/5] Restarting the service..."
@@ -102,7 +122,7 @@ try {
     Write-Host "  IMPORTANT: now open the app and log in:" -ForegroundColor Yellow
     Write-Host "    username: admin" -ForegroundColor Yellow
     Write-Host "    password: admin123  (you will be asked to change it)" -ForegroundColor Yellow
-    Write-Host "  (if you already used the app with users before, your old admin password still works)" -ForegroundColor Gray
+    Write-Host "  (your old survey records are all safe)" -ForegroundColor Gray
 } catch {
     Write-Host "   WARNING: server did not answer yet. Waiting 20 more seconds..." -ForegroundColor Yellow
     Start-Sleep -Seconds 20
