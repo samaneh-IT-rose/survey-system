@@ -1,12 +1,18 @@
 # ==============================================================
 #  Survey System - WINDOWS UPDATE SCRIPT
-#  Updates the app code on C:\survey-system from GitHub (main branch)
+#  Updates the app code on C:\survey-system.
 #  WITHOUT touching: database (data\), logs, venv, run-server.bat
+#
+#  Two ways to get the new code:
+#    A) LOCAL ZIP (recommended, works offline):
+#       put the new "survey-system.zip" in the SAME folder as this script,
+#       then run the script. It will use the local zip.
+#    B) GITHUB (fallback): if no local zip is found, it downloads main branch.
 #
 #  What it does:
 #    1) Stops the SurveySystem task
 #    2) Backs up the current app folder (one click rollback possible)
-#    3) Downloads the latest code from GitHub
+#    3) Takes code from local survey-system.zip OR downloads from GitHub
 #    4) Copies app/ scripts/ deploy/ requirements.txt README.md
 #    5) Restarts the service and checks health
 #
@@ -21,8 +27,18 @@ $APPDIR   = "C:\survey-system"
 $REPO     = "https://github.com/samaneh-IT-rose/survey-system/archive/refs/heads/main.zip"
 $BACKEND  = 3010
 
+# مسیر احتمالی zip محلی: کنار همین اسکریپت
+$LOCALZIP = Join-Path $PSScriptRoot "survey-system.zip"
+if (-not (Test-Path $LOCALZIP)) { $LOCALZIP = "$HOME\Downloads\survey-system.zip" }
+$USELOCAL = Test-Path $LOCALZIP
+
 Write-Host "==============================================" -ForegroundColor Cyan
-Write-Host " Survey System - Update from GitHub" -ForegroundColor Cyan
+if ($USELOCAL) {
+    Write-Host " Survey System - Update from LOCAL ZIP" -ForegroundColor Cyan
+    Write-Host " zip: $LOCALZIP" -ForegroundColor Cyan
+} else {
+    Write-Host " Survey System - Update from GitHub" -ForegroundColor Cyan
+}
 Write-Host "==============================================" -ForegroundColor Cyan
 
 # ---------- 0) checks ----------
@@ -50,11 +66,16 @@ New-Item -ItemType Directory -Path $backup -Force | Out-Null
 Copy-Item "$APPDIR\app" "$backup\app" -Recurse -Force
 if (Test-Path "$APPDIR\scripts") { Copy-Item "$APPDIR\scripts" "$backup\scripts" -Recurse -Force }
 
-# ---------- 3) download ----------
-Write-Host ">> [3/5] Downloading latest code from GitHub..."
+# ---------- 3) source code (local zip or GitHub) ----------
 $zip = "$env:TEMP\survey-update.zip"
 $ex  = "$env:TEMP\ss_update"
-Invoke-WebRequest $REPO -OutFile $zip -UseBasicParsing
+if ($USELOCAL) {
+    Write-Host ">> [3/5] Using the local zip found next to the script..."
+    Copy-Item $LOCALZIP $zip -Force
+} else {
+    Write-Host ">> [3/5] No local zip found - downloading latest code from GitHub..."
+    Invoke-WebRequest $REPO -OutFile $zip -UseBasicParsing
+}
 if (Test-Path $ex) { Remove-Item $ex -Recurse -Force }
 Expand-Archive $zip $ex -Force
 $src = (Get-ChildItem $ex | Select-Object -First 1).FullName
@@ -67,7 +88,7 @@ if (Test-Path "$src\deploy")  { Copy-Item "$src\deploy"  "$APPDIR\deploy"  -Recu
 Copy-Item "$src\requirements.txt" "$APPDIR\requirements.txt" -Force
 Copy-Item "$src\README.md" "$APPDIR\README.md" -Force
 Remove-Item $ex -Recurse -Force
-Remove-Item $zip -Force
+if (-not $USELOCAL) { Remove-Item $zip -Force }
 
 # ---------- 5) restart + health check ----------
 Write-Host ">> [5/5] Restarting the service..."
