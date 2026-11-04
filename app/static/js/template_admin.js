@@ -119,6 +119,48 @@
   });
 
   document.addEventListener("DOMContentLoaded", function () {
+    // ---------- جای‌گذاری گروهی (چسباندن سؤال‌های فرم اصلی از Word) ----------
+    var bulkKind = "q";
+    var bulkModal = $("bulkModal");
+    function openBulk(kind) {
+      bulkKind = kind;
+      if (kind === "q") {
+        $("bulkTitle").textContent = "جای‌گذاری گروهی سؤال‌ها";
+        $("bulkText").placeholder = "سؤال اول\nسؤال دوم\nسؤال سوم";
+      } else {
+        $("bulkTitle").textContent = "جای‌گذاری گروهی وضعیت‌های تماس";
+        $("bulkText").placeholder = "وضعیت اول\nوضعیت دوم";
+      }
+      // پیش‌فرض: متن‌های فعال فعلی — تا کاربر بتواند فقط چند سطر را اصلاح کند
+      var rows = document.querySelectorAll('#' + (kind === "q" ? "qList" : "cList") + ' .tmrow:not(.inactive) .txt');
+      var lines = [];
+      rows.forEach(function (r) { lines.push(r.childNodes[0].textContent.trim()); });
+      $("bulkText").value = lines.join("\n");
+      bulkModal.hidden = false;
+      $("bulkText").focus();
+    }
+    $("bulkQBtn").addEventListener("click", function () { openBulk("q"); });
+    $("bulkCBtn").addEventListener("click", function () { openBulk("c"); });
+    $("bulkCancel").addEventListener("click", function () { bulkModal.hidden = true; });
+    bulkModal.addEventListener("click", function (ev) { if (ev.target === bulkModal) bulkModal.hidden = true; });
+    $("bulkApply").addEventListener("click", async function () {
+      var lines = $("bulkText").value.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean);
+      if (!lines.length) { window.S.toast("حداقل یک سطر لازم است.", "err"); return; }
+      var path = bulkKind === "q" ? "/template/questions/bulk" : "/template/contact-options/bulk";
+      try {
+        var res = await window.S.fetchJSON(API(path), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ texts: lines })
+        });
+        bulkModal.hidden = true;
+        window.S.toast(res.replaced + " مورد جای‌گذاری شد.", "ok");
+        reload();
+      } catch (e) {
+        window.S.toast((e && e.message) ? e.message : "جای‌گذاری ناموفق بود.", "err");
+      }
+    });
+
     $("addQBtn").addEventListener("click", async function () {
       var text = $("newQ").value.trim();
       if (text.length < 2) { window.S.toast("متن سؤال را وارد کنید.", "err"); return; }

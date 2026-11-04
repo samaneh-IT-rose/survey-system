@@ -21,6 +21,7 @@
   <div class="addrow">
     <input type="text" id="newQ" placeholder="متن سؤال جدید…" maxlength="300">
     <button class="btn primary" id="addQBtn">+ افزودن سؤال</button>
+    <button class="btn" id="bulkQBtn">📋 جای‌گذاری گروهی سؤال‌ها</button>
   </div>
 </section>
 
@@ -35,8 +36,26 @@
     <input type="text" id="newC" placeholder="متن وضعیت تماس جدید…" maxlength="300">
     <label class="switchline"><input type="checkbox" id="newCRequires" checked> نیازمند تکمیل جدول</label>
     <button class="btn primary" id="addCBtn">+ افزودن</button>
+    <button class="btn" id="bulkCBtn">📋 جای‌گذاری گروهی وضعیت‌ها</button>
   </div>
 </section>
+
+<div class="modal-backdrop" id="bulkModal" hidden>
+  <div class="modal">
+    <h2 id="bulkTitle">جای‌گذاری گروهی</h2>
+    <p class="mutedcard" id="bulkHint">
+      هر سؤال را در یک سطر بنویسید یا از فایل Word خود کپی و همین‌جا بچسبانید
+      (هر سطر = یک سؤال). سؤال‌های فعلی به‌ترتیب با سطرهای این کادر جای‌گذاری می‌شوند؛
+      پاسخ‌های ثبت‌شدهٔ قبلی بی‌معنا نمی‌شوند.
+    </p>
+    <textarea id="bulkText" class="bulkta" rows="9"
+      placeholder="سؤال اول&#10;سؤال دوم&#10;سؤال سوم"></textarea>
+    <div class="modal-actions">
+      <button class="btn primary" id="bulkApply">جای‌گذاری</button>
+      <button class="btn" id="bulkCancel">انصراف</button>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}

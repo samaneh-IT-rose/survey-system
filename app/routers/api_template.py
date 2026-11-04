@@ -88,6 +88,58 @@ def move_question(qid: int, payload: dict, request: Request, user: User = Depend
     return {"message": "ترتیب به‌روزرسانی شد."}
 
 
+@router.post("/questions/bulk")
+def bulk_questions(payload: dict, request: Request, user: User = Depends(api_admin), db: Session = Depends(get_db)):
+    """جای‌گذاری گروهی متن سؤال‌ها — برای انتقال دقیق سؤال‌های فرم اصلی.
+
+    هر سطر یک سؤال است. سؤال‌های موجود به‌ترتیب با متن‌های جدید به‌روزرسانی
+    می‌شوند (شناسه ثابت می‌ماند تا پاسخ‌های قدیمی بی‌معنا نشوند)،
+    اگر متن‌ها بیشتر باشند سؤال جدید ساخته و اگر کمتر باشند
+    سؤال‌های اضافی غیرفعال می‌شوند.
+    """
+    raw = payload.get("texts")
+    if not isinstance(raw, list):
+        raise HTTPException(422, detail={"message": "فهرست متن‌ها ارسال نشده است."})
+    texts: list[str] = []
+    for item in raw:
+        t = str(item or "").strip()
+        if not t:
+            continue
+        if not (2 <= len(t) <= 300):
+            raise HTTPException(422, detail={"message": "هر سؤال باید بین ۲ تا ۳۰۰ نویسه باشد: " + t[:60]})
+        texts.append(t)
+    if not texts:
+        raise HTTPException(422, detail={"message": "حداقل یک سؤال لازم است."})
+    if len(texts) > 40:
+        raise HTTPException(422, detail={"message": "حداکثر ۴۰ سؤال پذیرفته می‌شود."})
+
+    existing = list(db.scalars(
+        select(Question)
+        .where(Question.is_active.is_(True))
+        .order_by(Question.display_order, Question.id)
+    ))
+    for i, text in enumerate(texts):
+        if i < len(existing):
+            existing[i].text = text
+            existing[i].is_active = True
+        else:
+            db.add(Question(text=text, display_order=1000 + i))
+    for extra in existing[len(texts):]:
+        extra.is_active = False
+    db.flush()
+
+    # شماره‌گذاری یکدست سؤال‌های فعال
+    actives = list(db.scalars(
+        select(Question).where(Question.is_active.is_(True)).order_by(Question.display_order, Question.id)
+    ))
+    for i, q in enumerate(actives, start=1):
+        q.display_order = i
+    db.commit()
+    log_activity(db, request, user, "template_question_bulk", f"جای‌گذاری گروهی {len(texts)} سؤال")
+    rows = db.scalars(select(Question).order_by(Question.display_order, Question.id)).all()
+    return {"replaced": len(texts), "questions": [serialize_question(q) for q in rows]}
+
+
 @router.get("/contact-options")
 def list_contacts(db: Session = Depends(get_db)):
     rows = db.scalars(
@@ -131,6 +183,59 @@ def update_contact(cid: int, payload: dict, request: Request, user: User = Depen
     log_activity(db, request, user, "template_contact_update", f"وضعیت تماس {cid}")
     db.refresh(c)
     return serialize_contact(c)
+
+
+@router.post("/contact-options/bulk")
+def bulk_contacts(payload: dict, request: Request, user: User = Depends(api_admin), db: Session = Depends(get_db)):
+    """جای‌گذاری گروهی وضعیت‌های تماس — مثل سؤال‌ها؛ شناسه‌های ثابت می‌مانند."""
+    raw = payload.get("texts")
+    if not isinstance(raw, list):
+        raise HTTPException(422, detail={"message": "فهرست متن‌ها ارسال نشده است."})
+    texts: list[str] = []
+    for item in raw:
+        t = str(item or "").strip()
+        if not t:
+            continue
+        if not (2 <= len(t) <= 300):
+            raise HTTPException(422, detail={"message": "هر وضعیت تماس باید بین ۲ تا ۳۰۰ نویسه باشد: " + t[:60]})
+        texts.append(t)
+    if not texts:
+        raise HTTPException(422, detail={"message": "حداقل یک وضعیت تماس لازم است."})
+    if len(texts) > 40:
+        raise HTTPException(422, detail={"message": "حداکثر ۴۰ وضعیت تماس پذیرفته می‌شود."})
+    flags = payload.get("requires_answers")
+    flags = flags if isinstance(flags, list) else []
+
+    existing = list(db.scalars(
+        select(ContactOption)
+        .where(ContactOption.is_active.is_(True))
+        .order_by(ContactOption.display_order, ContactOption.id)
+    ))
+    for i, text in enumerate(texts):
+        if i < len(existing):
+            existing[i].text = text
+            existing[i].is_active = True
+            if i < len(flags):
+                existing[i].requires_answers = bool(flags[i])
+        else:
+            db.add(ContactOption(
+                text=text,
+                requires_answers=bool(flags[i]) if i < len(flags) else False,
+                display_order=1000 + i,
+            ))
+    for extra in existing[len(texts):]:
+        extra.is_active = False
+    db.flush()
+
+    actives = list(db.scalars(
+        select(ContactOption).where(ContactOption.is_active.is_(True)).order_by(ContactOption.display_order, ContactOption.id)
+    ))
+    for i, c in enumerate(actives, start=1):
+        c.display_order = i
+    db.commit()
+    log_activity(db, request, user, "template_contact_bulk", f"جای‌گذاری گروهی {len(texts)} وضعیت تماس")
+    rows = db.scalars(select(ContactOption).order_by(ContactOption.display_order, ContactOption.id)).all()
+    return {"replaced": len(texts), "contact_options": [serialize_contact(c) for c in rows]}
 
 
 @router.post("/contact-options/{cid}/move")

@@ -419,6 +419,11 @@ html[data-mode="dark"] .badge.off { background: #26303c; color: #9ca3af; }
 .modal .field input, .modal .field select { width: 100%; padding: 9px 12px; border: 1px solid var(--border);
   border-radius: 10px; background: var(--bg); color: var(--text); font: inherit; box-sizing: border-box; }
 .modal-actions { display: flex; gap: 8px; margin-top: 16px; }
+/* جای‌گذاری گروهی سؤال‌ها — کادر چندسطری */
+.modal .bulkta { width: 100%; min-height: 180px; resize: vertical; padding: 10px 12px; box-sizing: border-box;
+  border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text);
+  font: inherit; line-height: 1.9; }
+.modal .bulkta:focus { outline: 2px solid var(--primary); outline-offset: 1px; }
 
 /* --- فیلتر لاگ و صفحه‌بندی و بنر کلید --- */
 .filterrow { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
