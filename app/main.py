@@ -79,6 +79,20 @@ app = FastAPI(title=APP_TITLE, lifespan=lifespan, docs_url="/docs", openapi_url=
 static_dir = BASE_DIR / "app" / "static"
 app.mount("/app/static", StaticFiles(directory=str(static_dir)), name="static")
 
+
+@app.middleware("http")
+async def no_cache_html(request: Request, call_next):
+    """صفحات HTML هرگز کش نشوند — مرورگر همیشه نسخهٔ تازه را می‌گیرد.
+
+    بدون این، مرورگر می‌تواند HTML قدیمی (بدون ?v= فایل‌های استاتیک) را
+    هفته‌ها نشان دهد و کاربر بعد از هر آپدیت ظاهر قدیمی ببیند.
+    """
+    response = await call_next(request)
+    if response.headers.get("content-type", "").startswith("text/html"):
+        response.headers["Cache-Control"] = "no-store"
+    return response
+
+
 app.include_router(pages.router)
 app.include_router(pages_auth.router)
 app.include_router(api_locations.router, prefix=APP_PREFIX)

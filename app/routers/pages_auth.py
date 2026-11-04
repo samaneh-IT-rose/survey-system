@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..auth import PageRedirect
-from ..config import APP_PREFIX, APP_TITLE, APP_VERSION, BASE_DIR, LOGO_URL, ORG_NAME
+from ..config import APP_PREFIX, APP_TITLE, APP_VERSION, BASE_DIR, ORG_NAME
 from ..database import get_db
 from ..models import User
 from ..utils.activity import log_activity
@@ -21,25 +21,16 @@ from ..utils.security import (
     verify_password,
 )
 from ..auth import _load_user
-from .pages import _asset_url
+from .pages import _asset_url, _versioned_logo
 
 from fastapi.templating import Jinja2Templates
 
 templates = Jinja2Templates(directory=str(BASE_DIR / "app" / "templates"))
 # مهم: صفحات ورود و تغییر رمز قالب مستقل دارند (base.html را extend نمی‌کنند)؛
 # بدون asset() با نسخهٔ ?v=، مرورگر CSS قدیمی کش‌شده را نشان می‌داد و لوگو
-# نصفه دیده می‌شد حتی بعد از به‌روزرسانی سرور
+# نصفه دیده می‌شد حتی بعد از به‌روزرسانی سرور. اندازهٔ لوگو هم به‌صورت
+# استایل درون‌خطی داده شده تا با CSS قدیمیِ کش‌شده هم درست نمایش داده شود.
 templates.env.globals["asset"] = _asset_url
-
-
-def _versioned_logo() -> str:
-    """نشانی لوگو با پارامتر نسخه — اگر لوگو عوض شود مرورگر نسخهٔ جدید را می‌گیرد."""
-    url = LOGO_URL
-    if url.startswith(f"{APP_PREFIX}/static/"):
-        rel = url[len(f"{APP_PREFIX}/"):]
-        url = _asset_url(rel)
-    return url
-
 
 router = APIRouter(prefix=APP_PREFIX, tags=["auth"])
 

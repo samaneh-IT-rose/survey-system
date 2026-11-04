@@ -29,6 +29,14 @@ def _asset_url(path: str) -> str:
     return f"{APP_PREFIX}/{path}?v={v}"
 
 
+def _versioned_logo() -> str:
+    """نشانی لوگو با پارامتر نسخه — اگر لوگو عوض شود مرورگر نسخهٔ جدید را می‌گیرد."""
+    url = LOGO_URL
+    if url.startswith(f"{APP_PREFIX}/static/"):
+        url = _asset_url(url[len(f"{APP_PREFIX}/"):])
+    return url
+
+
 templates.env.globals["asset"] = _asset_url
 
 router = APIRouter(prefix=APP_PREFIX, tags=["pages"])
@@ -38,7 +46,7 @@ def _ctx(user: User | None = None, **extra):
     ctx = {
         "app_title": APP_TITLE,
         "org_name": ORG_NAME,
-        "logo_url": LOGO_URL,
+        "logo_url": _versioned_logo(),
         "today": today_jalali_str(),
         "prefix": APP_PREFIX,
         "asset": _asset_url,
