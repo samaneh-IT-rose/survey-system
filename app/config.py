@@ -6,6 +6,9 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent  # survey-system/
 
 APP_TITLE = "سامانه فرم نظرسنجی تلفنی"
+# نسخهٔ برنامه — در فوتر صفحهٔ ورود و در healthz نمایش داده می‌شود تا
+# بعد از هر به‌روزرسانی بتوان مطمئن شد نسخهٔ جدید واقعاً روی سرور است
+APP_VERSION = "1.0.4"
 ORG_NAME = os.environ.get("SURVEY_ORG_NAME", "راه زندگی")
 LOGO_URL = os.environ.get("SURVEY_LOGO_URL", "/app/static/logo/logo.png")
 

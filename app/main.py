@@ -119,4 +119,5 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 
 @app.get("/healthz", include_in_schema=False)
 def healthz():
-    return {"status": "ok"}
+    from .config import APP_VERSION
+    return {"status": "ok", "version": APP_VERSION}
