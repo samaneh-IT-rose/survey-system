@@ -9,6 +9,10 @@ APP_TITLE = "سامانه فرم نظرسنجی تلفنی"
 ORG_NAME = os.environ.get("SURVEY_ORG_NAME", "راه زندگی")
 LOGO_URL = os.environ.get("SURVEY_LOGO_URL", "/app/static/logo/logo.png")
 
+# کد فرم — در سربرگ نسخهٔ چاپی کنار تاریخ نمایش داده می‌شود
+# برای تغییر: در run-server.bat خط «set SURVEY_FORM_CODE=کد_مورد_نظر» را اضافه کنید
+FORM_CODE = os.environ.get("SURVEY_FORM_CODE", "")
+
 # دیتابیس — به‌صورت پیش‌فرض PostgreSQL محلی
 DATABASE_URL = os.environ.get(
     "SURVEY_DATABASE_URL",
