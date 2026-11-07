@@ -8,13 +8,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent  # survey-system/
 APP_TITLE = "سامانه فرم نظرسنجی تلفنی"
 # نسخهٔ برنامه — در فوتر صفحهٔ ورود و در healthz نمایش داده می‌شود تا
 # بعد از هر به‌روزرسانی بتوان مطمئن شد نسخهٔ جدید واقعاً روی سرور است
-APP_VERSION = "1.0.5"
+APP_VERSION = "1.0.6"
 ORG_NAME = os.environ.get("SURVEY_ORG_NAME", "راه زندگی")
 LOGO_URL = os.environ.get("SURVEY_LOGO_URL", "/app/static/logo/logo.png")
 
 # کد فرم — در سربرگ نسخهٔ چاپی کنار تاریخ نمایش داده می‌شود
-# برای تغییر: در run-server.bat خط «set SURVEY_FORM_CODE=کد_مورد_نظر» را اضافه کنید
-FORM_CODE = os.environ.get("SURVEY_FORM_CODE", "")
+# پیش‌فرض: کد فرم فایل نمونه (RS-PS-09-01). برای تغییر: در run-server.bat
+# خط «set SURVEY_FORM_CODE=کد_مورد_نظر» را اضافه کنید
+FORM_CODE = os.environ.get("SURVEY_FORM_CODE", "RS-PS-09-01")
 
 # دیتابیس — به‌صورت پیش‌فرض PostgreSQL محلی
 DATABASE_URL = os.environ.get(

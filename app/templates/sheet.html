@@ -2,17 +2,16 @@
 <html lang="fa" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>فرم نظرسنجی — {{ record.first_name }} {{ record.last_name }}</title>
+  <title>فرم رضایت‌سنجی مراجعین مشاوره تلفنی</title>
   <style>
-    /* قالب مستقل چاپ/PDF — رنگ‌ها مستقل از تم رابط (بخش ۹ سند) */
+    /* قالب مستقل چاپ/PDF — چیدمان دقیقاً مطابق فایل نمونهٔ RS-PS-09-01 */
     @page { size: A4 portrait; margin: 0; }
 
     :root {
       --ink: #1f2430;
-      --line: #565b66;
-      --accent: #ba376d;
+      --line: #4a4f5a;
+      --headbg: #ececec;
       --line-w: 1.1px;
-      --headbg: #f7eef3;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -35,65 +34,87 @@
       color: var(--ink);
       width: 210mm;
       min-height: 296mm;
-      padding: 9mm 11mm 7mm;
-      font-size: 10.4pt;
-      line-height: 1.7;
+      padding: 9mm 10mm 7mm;
+      font-size: 10.3pt;
+      line-height: 1.75;
     }
 
     bdi, .num { direction: ltr; unicode-bidi: isolate; }
 
-    /* ---------- سربرگ: لوگو راست، عنوان وسط، کد فرم و تاریخ چپ ---------- */
-    .head { display: flex; align-items: center; gap: 5mm; border-bottom: calc(var(--line-w) * 2.2) solid var(--accent); padding-bottom: 2.6mm; }
-    .head .logo { height: 21mm; width: auto; object-fit: contain; flex: 0 0 auto; }
-    .head .titles { text-align: center; flex: 1; }
-    .head h1 { font-size: 15pt; color: var(--accent); }
-    .head .org { font-size: 11pt; font-weight: 700; margin-top: 0.8mm; }
-    .head .meta { font-size: 8.4pt; color: #565b66; margin-top: 0.6mm; }
+    /* کادر بزرگ دور کل فرم — مانند نمونه */
+    .page {
+      border: calc(var(--line-w) * 1.5) solid var(--ink);
+      border-radius: 4mm;
+      padding: 4.5mm 5mm 5mm;
+    }
 
-    /* جعبهٔ کد فرم و تاریخ — سمت چپ سربرگ */
-    .fcode { flex: 0 0 auto; border: var(--line-w) solid var(--line); padding: 1.6mm 3mm; font-size: 9pt; min-width: 34mm; }
-    .fcode .row { display: flex; gap: 2mm; justify-content: space-between; align-items: baseline; }
-    .fcode .row + .row { border-top: var(--line-w) dotted var(--line); margin-top: 1mm; padding-top: 1mm; }
-    .fcode b { font-weight: 700; }
-    .fcode .v { min-width: 14mm; text-align: center; border-bottom: var(--line-w) dotted var(--line); }
+    /* ---------- سربرگ: یک کادر واحد با سه خانه (لوگو | عنوان | کد فرم و تاریخ) ---------- */
+    .head { display: flex; align-items: stretch; border: var(--line-w) solid var(--ink); }
+    .head .cell { padding: 2.2mm 3mm; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+    .head .cell + .cell { border-inline-start: var(--line-w) solid var(--ink); }
+    .head .cell-logo { flex: 0 0 30mm; }
+    .head .cell-title { flex: 1; }
+    .head .cell-meta { flex: 0 0 52mm; align-items: flex-start; }
 
-    /* ---------- کادرهای بخش‌ها ---------- */
-    .panel { border: var(--line-w) solid var(--line); margin-top: 3.2mm; break-inside: avoid; }
-    .panel > .ptitle { background: var(--headbg); border-bottom: var(--line-w) solid var(--line); padding: 1.1mm 3mm; font-weight: 700; font-size: 10.2pt; color: var(--accent); }
-    .panel > .pbody { padding: 2.4mm 3mm; }
-    .panel > .pbody.nopad { padding: 0; }
+    .head .cell-logo img { height: 17.5mm; width: auto; object-fit: contain; }
+    .head .cell-logo .brand { font-size: 10.5pt; font-weight: 700; margin-top: 0.6mm; }
 
-    /* مشخصات مصاحبه‌شونده */
-    .info { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2.2mm 4.5mm; }
-    .info .f { border-bottom: var(--line-w) dotted var(--line); padding-bottom: 0.6mm; display: flex; gap: 2mm; align-items: baseline; }
-    .info .f b { font-size: 8.6pt; font-weight: 700; white-space: nowrap; }
-    .info .f span { flex: 1; text-align: center; font-size: 9.8pt; }
+    .head .cell-title h1 { font-size: 13.6pt; font-weight: 700; text-align: center; line-height: 1.5; }
 
-    /* جدول نظرسنجی */
-    table.sheet { width: 100%; border-collapse: collapse; }
-    table.sheet th, table.sheet td { border: var(--line-w) solid var(--line); padding: 1.4mm 1.6mm; text-align: center; }
-    table.sheet thead th { background: var(--headbg); font-size: 9.2pt; font-weight: 700; }
-    table.sheet tbody th { text-align: right; font-weight: 500; font-size: 9.4pt; width: 41%; }
-    table.sheet td .mark { font-size: 12.5pt; font-weight: 700; color: var(--accent); }
-    table.sheet td .dim { color: #b9bdc7; font-size: 10pt; }
+    .head .cell-meta { justify-content: space-evenly; gap: 1.6mm; }
+    .head .cell-meta .row { display: flex; align-items: baseline; gap: 2mm; font-size: 9.6pt; width: 100%; }
+    .head .cell-meta .row b { white-space: nowrap; }
+    /* کادر کوچک دور تاریخ — مانند نمونه */
+    .head .cell-meta .dbox {
+      flex: 1; border: var(--line-w) solid var(--ink); padding: 0.4mm 1.5mm;
+      text-align: center; font-size: 9.2pt; min-height: 6.2mm;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
 
-    /* وضعیت تماس */
-    .contacts { display: flex; flex-wrap: wrap; gap: 1.6mm 6mm; }
-    .contacts .c { font-size: 9.6pt; display: flex; align-items: center; gap: 1.6mm; }
-    .contacts .c i { font-style: normal; width: 4.1mm; height: 4.1mm; border: var(--line-w) solid var(--line); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 8.6pt; color: var(--accent); font-weight: 700; }
+    /* ---------- مشخصات مراجع — دو ستون، برچسب + خط نقطه‌چین ---------- */
+    .info { display: grid; grid-template-columns: 1fr 1fr; gap: 3.4mm 12mm; margin-top: 4.2mm; }
+    .info .f { display: flex; align-items: baseline; gap: 2mm; }
+    .info .f b { font-weight: 700; white-space: nowrap; font-size: 10.2pt; }
+    .info .f span {
+      flex: 1; border-bottom: var(--line-w) dotted var(--line);
+      min-height: 6mm; text-align: center; font-size: 10pt; padding-bottom: 0.4mm;
+    }
 
-    /* توضیحات و ملاحظات — خط‌های نقطه‌چین برای نوشتن */
-    .notes .rule { border-bottom: var(--line-w) dotted var(--line); height: 7.4mm; }
+    /* ---------- وضعیت تماس — یک خط با دایره‌ها ---------- */
+    .contacts { display: flex; align-items: baseline; flex-wrap: wrap; gap: 1.2mm 7mm; margin-top: 4mm; }
+    .contacts > b { font-weight: 700; }
+    .contacts .c { display: inline-flex; align-items: center; gap: 1.8mm; font-size: 9.9pt; }
 
-    /* امضاها */
-    .signs { display: flex; gap: 8mm; padding-top: 1mm; }
-    .signs .s { flex: 1; text-align: center; }
-    .signs .s .lbl { font-size: 9.4pt; font-weight: 700; margin-bottom: 8.5mm; }
-    .signs .s .line { border-bottom: var(--line-w) dotted var(--line); padding-top: 1mm; font-size: 8.4pt; color: #565b66; }
+    .circ {
+      width: 3.9mm; height: 3.9mm; border: var(--line-w) solid var(--ink);
+      border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+      flex: 0 0 auto; background: #fff;
+    }
+    .circ.sel::after { content: ""; width: 2.2mm; height: 2.2mm; border-radius: 50%; background: var(--ink); }
 
-    .footnote { margin-top: 3mm; border-top: var(--line-w) dotted var(--line); padding-top: 1.4mm; font-size: 8pt; color: #565b66; display: flex; justify-content: space-between; }
+    /* ---------- جدول نظرسنجی ---------- */
+    table.sheet { width: 100%; border-collapse: collapse; margin-top: 4mm; }
+    table.sheet th, table.sheet td { border: var(--line-w) solid var(--ink); text-align: center; }
+    table.sheet thead th { background: var(--headbg); font-size: 9.8pt; font-weight: 700; padding: 1.6mm 1.5mm; }
+    table.sheet tbody th { text-align: right; font-weight: 500; font-size: 10pt; padding: 2.5mm 3mm; width: 41%; }
+    table.sheet tbody td { padding: 2.4mm 1.5mm; }
+    table.sheet tbody tr { height: 9.6mm; }
 
-    /* دکمه چاپ فقط در نمای مرورگر */
+    /* ---------- نقاط قوت و پیشنهاد بهبود — برچسب + خط نقطه‌چین ---------- */
+    .notes { margin-top: 4.4mm; }
+    .notes .row { display: flex; align-items: baseline; gap: 2mm; }
+    .notes .row b { font-weight: 700; white-space: nowrap; }
+    .notes .row .rule { flex: 1; border-bottom: var(--line-w) dotted var(--line); min-height: 6.4mm; }
+    .notes .fullrule { border-bottom: var(--line-w) dotted var(--line); height: 7mm; }
+    .notes .block + .block { margin-top: 2.2mm; }
+
+    /* ---------- امضاها — دو کادر کنار هم، بدون عنوان بخش ---------- */
+    .signs { display: flex; gap: 6mm; margin-top: 5mm; }
+    .signs .s { flex: 1; border: var(--line-w) solid var(--ink); padding: 2.6mm 3.5mm; min-height: 24mm; }
+    .signs .s .lbl { font-weight: 700; font-size: 10.2pt; }
+    .signs .s .nameline { border-bottom: var(--line-w) solid var(--ink); height: 7mm; margin: 2.5mm 4mm 0; }
+
+    /* دکمهٔ چاپ فقط در نمای مرورگر */
     .printbar { position: fixed; top: 12px; left: 12px; z-index: 9; display: flex; gap: 8px; }
     .printbar button {
       font-family: inherit; font-size: 14px; padding: 10px 18px; border-radius: 10px;
@@ -116,102 +137,93 @@
   </div>
   {% endif %}
 
-  <div class="head">
-    <img class="logo" src="/app/static/logo/logo.png" alt="لوگو">
-    <div class="titles">
-      <h1>{{ app_title }}</h1>
-      <div class="org">{{ org_name }}</div>
-      <div class="meta">فرم تکمیل‌شده نظرسنجی تلفنی</div>
-    </div>
-    <div class="fcode">
-      <div class="row"><b>کد فرم:</b><span class="v">{% if form_code %}<span class="num">{{ form_code }}</span>{% endif %}</span></div>
-      <div class="row"><b>تاریخ:</b><span class="v"><span class="num">{{ record.survey_date_jalali }}</span></span></div>
-    </div>
-  </div>
+  <div class="page">
 
-  <div class="panel">
-    <div class="ptitle">مشخصات مصاحبه‌شونده</div>
-    <div class="pbody">
-      <div class="info">
-        <div class="f"><b>نام:</b><span>{{ record.first_name }}</span></div>
-        <div class="f"><b>نام خانوادگی:</b><span>{{ record.last_name }}</span></div>
-        <div class="f"><b>کد ملی:</b><span class="num">{{ record.national_code }}</span></div>
-        <div class="f"><b>شماره تماس:</b><span class="num">{{ record.phone }}</span></div>
-        <div class="f"><b>استان:</b><span>{{ record.province.name }}</span></div>
-        <div class="f"><b>شهرستان:</b><span>{{ record.county.name }}</span></div>
-        <div class="f"><b>تاریخ نظرسنجی (شمسی):</b><span class="num">{{ record.survey_date_jalali }}</span></div>
-        <div class="f"><b>شناسه رکورد:</b><span class="num">{{ record.id }}</span></div>
+    <!-- سربرگ: لوگو راست، عنوان وسط، کد فرم و تاریخ چپ — همه داخل یک کادر -->
+    <div class="head">
+      <div class="cell cell-logo">
+        <img src="/app/static/logo/logo.png" alt="لوگو">
+        <div class="brand">{{ org_name }}</div>
+      </div>
+      <div class="cell cell-title">
+        <h1>فرم رضایت‌سنجی مراجعین مشاوره تلفنی</h1>
+      </div>
+      <div class="cell cell-meta">
+        <div class="row"><b>کد فرم :</b><span class="num">{% if form_code %}{{ form_code }}{% endif %}</span></div>
+        <div class="row"><b>تاریخ:</b><span class="dbox"><span class="num">{{ record.survey_date_jalali }}</span></span></div>
       </div>
     </div>
-  </div>
 
-  <div class="panel">
-    <div class="ptitle">جدول نظرسنجی</div>
-    <div class="pbody nopad">
-      <table class="sheet">
-        <thead>
-          <tr>
-            <th>سؤال</th>
-            {% for label in ["خیلی زیاد", "زیاد", "متوسط", "کم", "خیلی کم"] %}
-            <th>{{ label }}</th>
-            {% endfor %}
-          </tr>
-        </thead>
-        <tbody>
-          {% for q in questions %}
-          <tr>
-            <th>{{ loop.index }}. {{ q.text }}</th>
-            {% for label in ["خیلی زیاد", "زیاد", "متوسط", "کم", "خیلی کم"] %}
-            <td>{% if q.value == label %}<span class="mark">✓</span>{% else %}<span class="dim">·</span>{% endif %}</td>
-            {% endfor %}
-          </tr>
+    <!-- مشخصات مراجع — دقیقاً با برچسب‌های نمونه -->
+    <div class="info">
+      <div class="f"><b>نام و نام خانوادگی مراجع:</b><span>{{ record.first_name }} {{ record.last_name }}</span></div>
+      <div class="f"><b>کد ملی:</b><span class="num">{{ record.national_code }}</span></div>
+      <div class="f"><b>شماره تماس مراجع:</b><span class="num">{{ record.phone }}</span></div>
+      <div class="f"><b>مشاور:</b><span></span></div>
+      <div class="f"><b>استان:</b><span>{{ record.province.name }}</span></div>
+      <div class="f"><b>شهرستان:</b><span>{{ record.county.name }}</span></div>
+      <div class="f"><b>نوع خدمت:</b><span></span></div>
+      <div class="f"><b>تاریخ دریافت خدمت:</b><span></span></div>
+    </div>
+
+    <!-- وضعیت تماس -->
+    <div class="contacts">
+      <b>وضعیت تماس:</b>
+      {% for c in contact_options %}
+      <span class="c">
+        <i class="circ{% if record.contact_option and record.contact_option.id == c.id %} sel{% endif %}"></i>{{ c.text }}
+      </span>
+      {% endfor %}
+    </div>
+
+    <!-- جدول نظرسنجی — بدون شماره‌گذاری، ستون‌ها مثل نمونه -->
+    <table class="sheet">
+      <thead>
+        <tr>
+          <th>سوال</th>
+          {% for label in ["خیلی زیاد", "زیاد", "متوسط", "کم", "خیلی کم"] %}
+          <th>{{ label }}</th>
           {% endfor %}
-          {% if not questions %}
-          <tr><td colspan="6">سؤالی تعریف نشده بود.</td></tr>
-          {% endif %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="panel">
-    <div class="ptitle">وضعیت تماس</div>
-    <div class="pbody">
-      <div class="contacts">
-        {% for c in contact_options %}
-        <div class="c"><i>{% if record.contact_option and record.contact_option.id == c.id %}✓{% endif %}</i>{{ c.text }}</div>
+        </tr>
+      </thead>
+      <tbody>
+        {% for q in questions %}
+        <tr>
+          <th>{{ q.text }}</th>
+          {% for label in ["خیلی زیاد", "زیاد", "متوسط", "کم", "خیلی کم"] %}
+          <td><i class="circ{% if q.value == label %} sel{% endif %}"></i></td>
+          {% endfor %}
+        </tr>
         {% endfor %}
+        {% if not questions %}
+        <tr><td colspan="6">سؤالی تعریف نشده بود.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+
+    <!-- نقاط قوت و پیشنهاد بهبود -->
+    <div class="notes">
+      <div class="block">
+        <div class="row"><b>نقاط قوت مشاوره تلفنی:</b><span class="rule"></span></div>
+        <div class="fullrule"></div>
+      </div>
+      <div class="block">
+        <div class="row"><b>پیشنهاد بهبود:</b><span class="rule"></span></div>
+        <div class="fullrule"></div>
       </div>
     </div>
-  </div>
 
-  <div class="panel">
-    <div class="ptitle">توضیحات و ملاحظات</div>
-    <div class="pbody notes">
-      <div class="rule"></div>
-      <div class="rule"></div>
-    </div>
-  </div>
-
-  <div class="panel">
-    <div class="ptitle">امضاها</div>
-    <div class="pbody">
-      <div class="signs">
-        <div class="s">
-          <div class="lbl">نام و امضای کارشناس نظرسنجی</div>
-          <div class="line">نام و نام خانوادگی — تاریخ</div>
-        </div>
-        <div class="s">
-          <div class="lbl">امضای سرپرست واحد</div>
-          <div class="line">نام و نام خانوادگی — تاریخ</div>
-        </div>
+    <!-- امضاها — دو کادر بدون عنوان بخش، مثل نمونه -->
+    <div class="signs">
+      <div class="s">
+        <div class="lbl">نام و نام خانوادگی کارشناس نظارت حرفه‌ای:</div>
+        <div class="nameline"></div>
+      </div>
+      <div class="s">
+        <div class="lbl">امضای کارشناس نظارت حرفه‌ای:</div>
       </div>
     </div>
-  </div>
 
-  <div class="footnote">
-    <span>این فرم توسط سامانه نظرسنجی تولید شده است.</span>
-    <span>زمان ثبت: <bdi>{{ record.created_at_fa }}</bdi> — آخرین ویرایش: <bdi>{{ record.updated_at_fa }}</bdi></span>
   </div>
 </body>
 </html>
