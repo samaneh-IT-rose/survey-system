@@ -187,10 +187,20 @@
     setDateStr(rec.survey_date_jalali);
     if (rec.contact_option) {
       var r = document.querySelector('input[name="contact_option_id"][value="' + rec.contact_option.id + '"]');
+      if (!r && rec.contact_option.text) {
+        r = document.querySelector('input[name="contact_option_id"][data-ctext="' + rec.contact_option.text.replace(/\\/g, "\\\\").replace(/"/g, "&quot;") + '"]');
+      }
       if (r) r.checked = true;
     }
     (rec.answers || []).forEach(function (a) {
+      // اول تطبیق با شناسهٔ سؤال؛ برای رکوردهای قدیمی (پیش از همگام‌سازی الگو)
+      // تطبیق با متن سؤالِ ذخیره‌شده تا تیک‌ها در حالت ویرایش هم دیده شوند
       var r = document.querySelector('input[name="q' + a.question_id + '"][value="' + a.value + '"]');
+      if (!r && a.question_text) {
+        var sel = 'tr[data-qtext="' + a.question_text.replace(/\\/g, "\\\\").replace(/"/g, "&quot;") + '"]';
+        var row = document.querySelector(sel);
+        if (row) r = row.querySelector('input[value="' + a.value + '"]');
+      }
       if (r) r.checked = true;
     });
     refreshRatingLock();

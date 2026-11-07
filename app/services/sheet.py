@@ -19,7 +19,14 @@ def build_sheet_context(db: Session, survey: Survey, *, interactive: bool) -> di
         .where(Question.is_active.is_(True))
         .order_by(Question.display_order, Question.id)
     ).all()
-    answers_by_qid = {a["question_id"]: a["value"] for a in record["answers"]}
+    # تطبیق پاسخ‌ها: اول با شناسهٔ سؤال، و اگر رکورد قدیمی بود و سؤالش با
+    # همگام‌سازی الگو شناسهٔ جدید گرفته بود، با متن سؤالِ ذخیره‌شده (snapshot)
+    answers_by_qid: dict[int, str] = {}
+    answers_by_text: dict[str, str] = {}
+    for a in record["answers"]:
+        answers_by_qid[a["question_id"]] = a["value"]
+        if a.get("question_text"):
+            answers_by_text[a["question_text"].strip()] = a["value"]
     contacts = db.scalars(
         select(ContactOption)
         .where(ContactOption.is_active.is_(True))
@@ -29,7 +36,11 @@ def build_sheet_context(db: Session, survey: Survey, *, interactive: bool) -> di
     return {
         "record": record,
         "questions": [
-            {"id": q.id, "text": q.text, "value": answers_by_qid.get(q.id)}
+            {
+                "id": q.id,
+                "text": q.text,
+                "value": answers_by_qid.get(q.id) or answers_by_text.get(q.text.strip()),
+            }
             for q in active_questions
         ],
         "contact_options": [{"id": c.id, "text": c.text} for c in contacts],

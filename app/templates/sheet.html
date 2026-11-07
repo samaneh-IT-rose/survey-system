@@ -30,13 +30,19 @@
     html, body { background: #ffffff; }
 
     body {
-      font-family: "Vazirmatn", Tahoma, Arial, sans-serif;
+      font-family: "B Zar", "BZar", "Vazirmatn", Tahoma, Arial, sans-serif;
       color: var(--ink);
       width: 210mm;
       min-height: 296mm;
       padding: 9mm 10mm 7mm;
       font-size: 10.3pt;
       line-height: 1.75;
+    }
+
+    /* متن‌های پررنگ با B Zar Bold — اگر روی سرور نصب بود، از نسخهٔ واقعی بولد استفاده می‌شود */
+    b, .info .f b, .head .cell-meta .row b, .contacts > b, .notes .row b,
+    .signs .s .lbl, table.sheet thead th {
+      font-family: "B Zar Bold", "BZar", "B Zar", "Vazirmatn", Tahoma, Arial, sans-serif;
     }
 
     bdi, .num { direction: ltr; unicode-bidi: isolate; }
@@ -59,17 +65,14 @@
     .head .cell-logo img { height: 17.5mm; width: auto; object-fit: contain; }
     .head .cell-logo .brand { font-size: 10.5pt; font-weight: 700; margin-top: 0.6mm; }
 
-    .head .cell-title h1 { font-size: 13.6pt; font-weight: 700; text-align: center; line-height: 1.5; }
+    .head .cell-title h1 {
+      font-family: "B Titr", "BTitr", "B Zar Bold", "B Zar", "Vazirmatn", Tahoma, Arial, sans-serif;
+      font-size: 13.6pt; font-weight: 700; text-align: center; line-height: 1.5;
+    }
 
     .head .cell-meta { justify-content: space-evenly; gap: 1.6mm; }
     .head .cell-meta .row { display: flex; align-items: baseline; gap: 2mm; font-size: 9.6pt; width: 100%; }
     .head .cell-meta .row b { white-space: nowrap; }
-    /* کادر کوچک دور تاریخ — مانند نمونه */
-    .head .cell-meta .dbox {
-      flex: 1; border: var(--line-w) solid var(--ink); padding: 0.4mm 1.5mm;
-      text-align: center; font-size: 9.2pt; min-height: 6.2mm;
-      display: inline-flex; align-items: center; justify-content: center;
-    }
 
     /* ---------- مشخصات مراجع — دو ستون، برچسب + خط نقطه‌چین ---------- */
     .info { display: grid; grid-template-columns: 1fr 1fr; gap: 3.4mm 12mm; margin-top: 4.2mm; }
@@ -110,9 +113,14 @@
 
     /* ---------- امضاها — دو کادر کنار هم، بدون عنوان بخش ---------- */
     .signs { display: flex; gap: 6mm; margin-top: 5mm; }
-    .signs .s { flex: 1; border: var(--line-w) solid var(--ink); padding: 2.6mm 3.5mm; min-height: 24mm; }
+    .signs .s { flex: 1; border: var(--line-w) solid var(--ink); padding: 2.6mm 3.5mm; min-height: 24mm; position: relative; }
     .signs .s .lbl { font-weight: 700; font-size: 10.2pt; }
     .signs .s .nameline { border-bottom: var(--line-w) solid var(--ink); height: 7mm; margin: 2.5mm 4mm 0; }
+    /* نقطه‌چین امضا — دقیقاً وسط کادر از نظر ارتفاع */
+    .signs .s .dotline {
+      position: absolute; left: 4mm; right: 4mm; top: 50%;
+      border-bottom: var(--line-w) dotted var(--line);
+    }
 
     /* دکمهٔ چاپ فقط در نمای مرورگر */
     .printbar { position: fixed; top: 12px; left: 12px; z-index: 9; display: flex; gap: 8px; }
@@ -149,8 +157,8 @@
         <h1>{{ form_title }}</h1>
       </div>
       <div class="cell cell-meta">
+        <div class="row"><b>تاریخ:</b><span class="num">{{ record.survey_date_jalali }}</span></div>
         <div class="row"><b>کد فرم :</b><span class="num">{% if form_code %}{{ form_code }}{% endif %}</span></div>
-        <div class="row"><b>تاریخ:</b><span class="dbox"><span class="num">{{ record.survey_date_jalali }}</span></span></div>
       </div>
     </div>
 
@@ -171,7 +179,7 @@
       <b>وضعیت تماس:</b>
       {% for c in contact_options %}
       <span class="c">
-        <i class="circ{% if record.contact_option and record.contact_option.id == c.id %} sel{% endif %}"></i>{{ c.text }}
+        <i class="circ{% if record.contact_option and (record.contact_option.id == c.id or record.contact_option.text == c.text) %} sel{% endif %}"></i>{{ c.text }}
       </span>
       {% endfor %}
     </div>
@@ -221,6 +229,7 @@
       </div>
       <div class="s">
         <div class="lbl">امضای کارشناس نظارت حرفه‌ای:</div>
+        <div class="dotline"></div>
       </div>
     </div>
 

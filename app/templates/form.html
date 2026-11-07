@@ -78,7 +78,7 @@
         </thead>
         <tbody>
           {% for q in questions %}
-          <tr>
+          <tr data-qtext="{{ q.text }}">
             <th scope="row">{{ q.text }}</th>
             {% for label in ["خیلی زیاد", "زیاد", "متوسط", "کم", "خیلی کم"] %}
             <td>
@@ -102,7 +102,7 @@
     <div class="radiolist" id="contactList">
       {% for c in contact_options %}
       <label class="tickline">
-        <input type="radio" name="contact_option_id" value="{{ c.id }}" data-requires="{{ 1 if c.requires_answers else 0 }}">
+        <input type="radio" name="contact_option_id" value="{{ c.id }}" data-requires="{{ 1 if c.requires_answers else 0 }}" data-ctext="{{ c.text }}">
         <span>{{ c.text }}</span>
       </label>
       {% else %}
