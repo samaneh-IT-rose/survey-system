@@ -2,7 +2,7 @@
 <html lang="fa" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>فرم رضایت‌سنجی مراجعین مشاوره تلفنی</title>
+  <title>{{ form_title }}</title>
   <style>
     /* قالب مستقل چاپ/PDF — چیدمان دقیقاً مطابق فایل نمونهٔ RS-PS-09-01 */
     @page { size: A4 portrait; margin: 0; }
@@ -146,7 +146,7 @@
         <div class="brand">{{ org_name }}</div>
       </div>
       <div class="cell cell-title">
-        <h1>فرم رضایت‌سنجی مراجعین مشاوره تلفنی</h1>
+        <h1>{{ form_title }}</h1>
       </div>
       <div class="cell cell-meta">
         <div class="row"><b>کد فرم :</b><span class="num">{% if form_code %}{{ form_code }}{% endif %}</span></div>

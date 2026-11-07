@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from ..config import APP_TITLE, FORM_CODE, ORG_NAME
 from ..models import ContactOption, Question, Survey
 from ..routers.api_surveys import serialize_survey
+from ..seed_data.defaults import DEFAULT_FORM_TITLE
 from ..utils.jalali import today_jalali_str
 
 
@@ -35,6 +36,7 @@ def build_sheet_context(db: Session, survey: Survey, *, interactive: bool) -> di
         "interactive": interactive,
         "org_name": ORG_NAME,
         "app_title": APP_TITLE,
+        "form_title": DEFAULT_FORM_TITLE,
         "form_code": FORM_CODE,
         "today": today_jalali_str(),
     }
