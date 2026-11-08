@@ -68,9 +68,16 @@ def page_user(request: Request, db: Session = Depends(get_db)) -> User:
     return user
 
 
-def _page_redirect_for_perm(perm: str) -> str:
-    """کاربرِ بدون دسترسی به جای خطا به داشبورد (خانهٔ امن خودش) هدایت می‌شود."""
-    return f"{APP_PREFIX}/dashboard"
+def _page_redirect_for_perm(user: User, perm: str) -> str:
+    """مقصد امن کاربرِ بدون دسترسی.
+
+    - داشبورد فقط برای کسی که دسترسی دیدن دارد خانهٔ امن است.
+    - اگر حتی دسترسی «فقط خواندنی» هم ندارد، به خروج هدایت می‌شود تا
+      در یک ریدایرکت بی‌پایان (داشبورد → داشبورد) گیر نکند.
+    """
+    if perm != PERM_VIEW and user.has_perm(PERM_VIEW):
+        return f"{APP_PREFIX}/dashboard"
+    return f"{APP_PREFIX}/logout"
 
 
 def page_require_perm(perm: str):
@@ -79,7 +86,7 @@ def page_require_perm(perm: str):
     def dep(request: Request, db: Session = Depends(get_db)) -> User:
         user = page_user(request, db)
         if not user.has_perm(perm):
-            raise PageRedirect(_page_redirect_for_perm(perm))
+            raise PageRedirect(_page_redirect_for_perm(user, perm))
         return user
 
     return dep
@@ -123,7 +130,7 @@ def page_admin(request: Request, db: Session = Depends(get_db)) -> User:
     """صفحات مدیریتی — فقط سطح «مدیر سامانه»."""
     user = page_user(request, db)
     if not user.is_admin_level:
-        raise PageRedirect(_page_redirect_for_perm("admin"))
+        raise PageRedirect(_page_redirect_for_perm(user, "admin"))
     return user
 
 
@@ -131,7 +138,7 @@ def page_staff(request: Request, db: Session = Depends(get_db)) -> User:
     """سازگاری با نسخهٔ قبل: کاربری که اجازهٔ ثبت/ویرایش فرم دارد."""
     user = page_user(request, db)
     if not user.has_perm(PERM_EDIT):
-        raise PageRedirect(_page_redirect_for_perm(PERM_EDIT))
+        raise PageRedirect(_page_redirect_for_perm(user, PERM_EDIT))
     return user
 
 
