@@ -26,5 +26,5 @@ DEFAULT_CONTACT_OPTIONS: list[tuple[str, bool]] = [
     ("تمایل به پاسخگویی نداشت", False),
 ]
 
-# عنوان رسمی سربرگ نسخهٔ چاپی — طبق بند ۱ درخواست سفارش‌دهنده
-DEFAULT_FORM_TITLE = "نظرسنجی مراجعین مشاوره تلفنی"
+# عنوان رسمی سربرگ نسخهٔ چاپی — عین فایل نمونه (Tel Surveys-form-offline-final.html)
+DEFAULT_FORM_TITLE = "فرم رضایت‌سنجی مراجعین مشاوره تلفنی"
