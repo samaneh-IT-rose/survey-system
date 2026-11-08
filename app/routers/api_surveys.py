@@ -43,6 +43,15 @@ def serialize_survey(s: Survey) -> dict:
         "county": {"id": s.county_id, "name": s.county.name},
         "survey_date": s.survey_date.isoformat(),
         "survey_date_jalali": gdate_to_jalali_str(s.survey_date),
+        "counselor": getattr(s, "counselor", "") or "",
+        "service_type": getattr(s, "service_type", "") or "",
+        "service_date": getattr(s, "service_date", "") or "",
+        "strengths": getattr(s, "strengths", "") or "",
+        "strengths_extra": getattr(s, "strengths_extra", "") or "",
+        "improvement": getattr(s, "improvement", "") or "",
+        "improvement_extra": getattr(s, "improvement_extra", "") or "",
+        "supervisor_name": getattr(s, "supervisor_name", "") or "",
+        "supervisor_signature": getattr(s, "supervisor_signature", "") or "",
         "contact_option": (
             {"id": co.id, "text": co.text, "requires_answers": co.requires_answers}
             if co
@@ -106,6 +115,15 @@ def create_survey(payload: dict, request: Request, user: User = Depends(api_staf
         county_id=clean["county_id"],
         survey_date=clean["survey_date"],
         contact_option_id=clean["contact_option_id"],
+        counselor=clean.get("counselor", ""),
+        service_type=clean.get("service_type", ""),
+        service_date=clean.get("service_date", ""),
+        strengths=clean.get("strengths", ""),
+        strengths_extra=clean.get("strengths_extra", ""),
+        improvement=clean.get("improvement", ""),
+        improvement_extra=clean.get("improvement_extra", ""),
+        supervisor_name=clean.get("supervisor_name", ""),
+        supervisor_signature=clean.get("supervisor_signature", ""),
     )
     db.add(survey)
     db.flush()
@@ -235,6 +253,15 @@ def update_survey(survey_id: int, payload: dict, request: Request, user: User = 
     s.county_id = clean["county_id"]
     s.survey_date = clean["survey_date"]
     s.contact_option_id = clean["contact_option_id"]
+    s.counselor = clean.get("counselor", "")
+    s.service_type = clean.get("service_type", "")
+    s.service_date = clean.get("service_date", "")
+    s.strengths = clean.get("strengths", "")
+    s.strengths_extra = clean.get("strengths_extra", "")
+    s.improvement = clean.get("improvement", "")
+    s.improvement_extra = clean.get("improvement_extra", "")
+    s.supervisor_name = clean.get("supervisor_name", "")
+    s.supervisor_signature = clean.get("supervisor_signature", "")
     _save_answers(db, s, clean)
     db.commit()
     log_activity(db, request, user, "survey_update", f"رکورد {survey_id} — {s.first_name} {s.last_name}")

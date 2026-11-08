@@ -95,6 +95,23 @@ class Survey(Base):
         ForeignKey("contact_options.id"), nullable=True
     )
 
+    # ── فیلدهای فرم نمونه (همه اختیاری؛ برای رکوردهای قدیمی رشتهٔ خالی) ──
+    # مشاور
+    counselor: Mapped[str] = mapped_column(String(120), nullable=False, default="", server_default="")
+    # نوع خدمت
+    service_type: Mapped[str] = mapped_column(String(120), nullable=False, default="", server_default="")
+    # تاریخ دریافت خدمت (شمسی، به‌صورت متن استاندارد ۱۴۰۵/۰۵/۱۰)
+    service_date: Mapped[str] = mapped_column(String(10), nullable=False, default="", server_default="")
+    # نقاط قوت مشاوره تلفنی (خط اول و خط ادامه)
+    strengths: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
+    strengths_extra: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
+    # پیشنهاد بهبود (خط اول و خط ادامه)
+    improvement: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
+    improvement_extra: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
+    # کارشناس نظارت حرفه‌ای: نام و امضا
+    supervisor_name: Mapped[str] = mapped_column(String(120), nullable=False, default="", server_default="")
+    supervisor_signature: Mapped[str] = mapped_column(String(255), nullable=False, default="", server_default="")
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=_now_tz
     )

@@ -36,6 +36,11 @@
         <input id="phone" name="phone" type="tel" inputmode="numeric" maxlength="14" placeholder="۰۹۱۲۱۲۳۴۵۶۷">
         <div class="err"></div>
       </div>
+      <div class="field" id="f-counselor">
+        <label for="counselor">مشاور</label>
+        <input id="counselor" name="counselor" type="text" maxlength="120" dir="rtl" lang="fa" spellcheck="false" placeholder="نام و نام خانوادگی مشاور">
+        <div class="err"></div>
+      </div>
       <div class="field" id="f-province_id">
         <label for="province_id">استان <span class="req">*</span></label>
         <select id="province_id" name="province_id">
@@ -48,6 +53,17 @@
         <select id="county_id" name="county_id" disabled>
           <option value="">ابتدا استان را انتخاب کنید…</option>
         </select>
+        <div class="err"></div>
+      </div>
+      <div class="field" id="f-service_type">
+        <label for="service_type">نوع خدمت</label>
+        <input id="service_type" name="service_type" type="text" maxlength="120" dir="rtl" lang="fa" spellcheck="false" placeholder="مثلاً مشاورهٔ فردی">
+        <div class="err"></div>
+      </div>
+      <div class="field" id="f-service_date">
+        <label for="service_date">تاریخ دریافت خدمت</label>
+        <input id="service_date" name="service_date" type="text" inputmode="numeric" maxlength="10" placeholder="مثلاً ۱۴۰۵/۰۵/۱۰">
+        <div class="hint">اختیاری — قالب شمسی مانند ۱۴۰۵/۰۵/۱۰ (ارقام فارسی هم پذیرفته می‌شود).</div>
         <div class="err"></div>
       </div>
       <div class="field" id="f-survey_date">
@@ -111,6 +127,43 @@
     </div>
     <div class="field" id="f-contact_option_id" style="margin-top:8px"><div class="err"></div></div>
     <div class="field" id="f-answers" style="margin-top:0"><div class="err"></div></div>
+  </section>
+
+  <section class="card">
+    <h2><span class="num">۴</span> نقاط قوت، پیشنهاد بهبود و نظارت حرفه‌ای</h2>
+    <div class="grid">
+      <div class="field" id="f-strengths" style="grid-column: 1 / -1">
+        <label for="strengths">نقاط قوت مشاوره تلفنی</label>
+        <input id="strengths" name="strengths" type="text" maxlength="500" dir="rtl" lang="fa" spellcheck="false">
+        <div class="err"></div>
+      </div>
+      <div class="field" id="f-strengths_extra" style="grid-column: 1 / -1">
+        <label for="strengths_extra">ادامهٔ نقاط قوت</label>
+        <input id="strengths_extra" name="strengths_extra" type="text" maxlength="500" dir="rtl" lang="fa" spellcheck="false">
+        <div class="err"></div>
+      </div>
+      <div class="field" id="f-improvement" style="grid-column: 1 / -1">
+        <label for="improvement">پیشنهاد بهبود</label>
+        <input id="improvement" name="improvement" type="text" maxlength="500" dir="rtl" lang="fa" spellcheck="false">
+        <div class="err"></div>
+      </div>
+      <div class="field" id="f-improvement_extra" style="grid-column: 1 / -1">
+        <label for="improvement_extra">ادامهٔ پیشنهاد بهبود</label>
+        <input id="improvement_extra" name="improvement_extra" type="text" maxlength="500" dir="rtl" lang="fa" spellcheck="false">
+        <div class="err"></div>
+      </div>
+      <div class="field" id="f-supervisor_name">
+        <label for="supervisor_name">نام و نام خانوادگی کارشناس نظارت حرفه‌ای</label>
+        <input id="supervisor_name" name="supervisor_name" type="text" maxlength="120" dir="rtl" lang="fa" spellcheck="false">
+        <div class="err"></div>
+      </div>
+      <div class="field" id="f-supervisor_signature">
+        <label for="supervisor_signature">امضای کارشناس نظارت حرفه‌ای</label>
+        <input id="supervisor_signature" name="supervisor_signature" type="text" maxlength="255" dir="rtl" lang="fa" spellcheck="false" placeholder="مثلاً نام کارشناس یا شرح امضا">
+        <div class="hint">برای چاپ در کادر امضا (اختیاری).</div>
+        <div class="err"></div>
+      </div>
+    </div>
   </section>
 
   <section class="card">

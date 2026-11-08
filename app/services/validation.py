@@ -103,6 +103,41 @@ def validate_survey_payload(db: SessionLocal, data: dict) -> tuple[dict, dict[st
             errors["survey_date"] = "تاریخ نامعتبر است."
             clean["survey_date"] = None
 
+    # ── فیلدهای اختیاری فرم نمونه ──
+    # مشاور / نوع خدمت / کارشناس نظارت و امضا: متن آزادِ کوتاه
+    for key, max_len in (
+        ("counselor", 120),
+        ("service_type", 120),
+        ("supervisor_name", 120),
+        ("supervisor_signature", 255),
+    ):
+        val = str(data.get(key) or "").strip()
+        if len(val) > max_len:
+            errors[key] = "این فیلد طولانی‌تر از حد مجاز است."
+        clean[key] = val
+
+    # نقاط قوت و پیشنهاد بهبود (هرکدام دو خط)
+    for key in ("strengths", "strengths_extra", "improvement", "improvement_extra"):
+        val = str(data.get(key) or "").strip()
+        if len(val) > 500:
+            errors[key] = "این فیلد طولانی‌تر از حد مجاز است (حداکثر ۵۰۰ نویسه)."
+        clean[key] = val
+
+    # تاریخ دریافت خدمت: اختیاری؛ اگر وارد شد باید شمسی معتبر باشد
+    raw_service_date = str(data.get("service_date") or "").strip()
+    if raw_service_date:
+        parsed_sd = parse_jalali_str(normalize_digits(raw_service_date))
+        if parsed_sd is None:
+            errors["service_date"] = (
+                "تاریخ دریافت خدمت نامعتبر است؛ قالب درست مانند ۱۴۰۵/۰۵/۱۰ است."
+            )
+            clean["service_date"] = raw_service_date
+        else:
+            sy, sm, sdd = parsed_sd
+            clean["service_date"] = f"{sy:04d}/{sm:02d}/{sdd:02d}"
+    else:
+        clean["service_date"] = ""
+
     # ── وضعیت تماس ──
     contact_id = data.get("contact_option_id")
     try:

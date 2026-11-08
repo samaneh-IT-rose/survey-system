@@ -28,6 +28,10 @@ from .routers import (
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    # ستون‌های جدید فیلدهای فرم نمونه به دیتابیس موجود اضافه می‌شود (بدون دست‌زدن به داده‌ها)
+    from .database import ensure_survey_columns
+
+    ensure_survey_columns(engine)
     _bootstrap_admin()
     yield
 

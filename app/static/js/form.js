@@ -142,6 +142,10 @@
     if (!$("province_id").value) errors.province_id = "استان را انتخاب کنید.";
     if (!$("county_id").value) errors.county_id = "شهرستان را انتخاب کنید.";
     if (!getDateStr()) errors.survey_date = "تاریخ را انتخاب کنید.";
+    var svcDate = window.S.toEnDigits($("service_date").value).trim();
+    if (svcDate && !/^[0-9]{4}\/[0-9]{1,2}\/[0-9]{1,2}$/.test(svcDate)) {
+      errors.service_date = "تاریخ دریافت خدمت را مانند ۱۴۰۵/۰۵/۱۰ وارد کنید یا خالی بگذارید.";
+    }
     var contact = document.querySelector('input[name="contact_option_id"]:checked');
     if (!contact) errors.contact_option_id = "وضعیت تماس را انتخاب کنید.";
     if (contact && contact.getAttribute("data-requires") === "1") {
@@ -172,6 +176,15 @@
       county_id: $("county_id").value || null,
       survey_date: getDateStr(),
       contact_option_id: (document.querySelector('input[name="contact_option_id"]:checked') || {}).value || null,
+      counselor: $("counselor").value.trim(),
+      service_type: $("service_type").value.trim(),
+      service_date: window.S.toEnDigits($("service_date").value).trim(),
+      strengths: $("strengths").value.trim(),
+      strengths_extra: $("strengths_extra").value.trim(),
+      improvement: $("improvement").value.trim(),
+      improvement_extra: $("improvement_extra").value.trim(),
+      supervisor_name: $("supervisor_name").value.trim(),
+      supervisor_signature: $("supervisor_signature").value.trim(),
       answers: answers
     };
   }
@@ -181,6 +194,15 @@
     $("last_name").value = rec.last_name;
     $("national_code").value = rec.national_code;
     $("phone").value = rec.phone;
+    $("counselor").value = rec.counselor || "";
+    $("service_type").value = rec.service_type || "";
+    $("service_date").value = rec.service_date || "";
+    $("strengths").value = rec.strengths || "";
+    $("strengths_extra").value = rec.strengths_extra || "";
+    $("improvement").value = rec.improvement || "";
+    $("improvement_extra").value = rec.improvement_extra || "";
+    $("supervisor_name").value = rec.supervisor_name || "";
+    $("supervisor_signature").value = rec.supervisor_signature || "";
     loadProvinces(rec.province.id).then(function () {
       return loadCounties(rec.province.id, rec.county.id);
     });

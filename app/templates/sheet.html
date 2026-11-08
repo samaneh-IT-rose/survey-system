@@ -246,6 +246,18 @@
             transform: translateY(-50%);
         }
 
+        /* ورودی تاریخ سربرگ: بدون کادر — فقط خط نقطه‌چین مثل بقیهٔ فیلدهای فرم */
+        #formDate {
+            border: none;
+            border-bottom: 1px dotted #333;
+            background: transparent;
+            font-family: inherit;
+            outline: none;
+            padding: 0 4px;
+            text-align: center;
+            color: #222;
+        }
+
         /* دکمهٔ چاپ — فقط در نمای مرورگر؛ در چاپ حذف می‌شود */
         .printbar { position: fixed; top: 12px; left: 12px; z-index: 9; display: flex; gap: 8px; }
         .printbar button {
@@ -380,6 +392,12 @@
             .footer-box input { font-size: 10.5pt; padding: 2pt; }
             #supervisorName { margin-top: auto; margin-bottom: auto; transform: translateY(-50%); }
 
+            /* تاریخ سربرگ در چاپ هم بدون کادر — فقط خط نقطه‌چین */
+            #formDate {
+                border: none !important;
+                border-bottom: 1px dotted #000 !important;
+            }
+
             input[type="text"]:not(.dotted-input), input[type="date"] {
                 border-bottom: 1px solid #000 !important;
             }
@@ -431,7 +449,7 @@
             </div>
             <div class="info-row">
                 <label>مشاور:</label>
-                <input type="text" id="counselor" value="" readonly>
+                <input type="text" id="counselor" value="{{ record.counselor }}" readonly>
             </div>
             <div class="info-row">
                 <label>استان:</label>
@@ -443,11 +461,11 @@
             </div>
             <div class="info-row">
                 <label>نوع خدمت:</label>
-                <input type="text" id="serviceType" value="" readonly>
+                <input type="text" id="serviceType" value="{{ record.service_type }}" readonly>
             </div>
             <div class="info-row">
                 <label>تاریخ دریافت خدمت:</label>
-                <input type="text" id="serviceDate" value="" readonly>
+                <input type="text" id="serviceDate" value="{{ record.service_date }}" readonly>
             </div>
         </div>
 
@@ -491,17 +509,17 @@
         <div class="open-lines">
             <div class="open-line">
                 <label>نقاط قوت مشاوره تلفنی:</label>
-                <input type="text" class="dotted-input" readonly>
+                <input type="text" class="dotted-input" value="{{ record.strengths }}" readonly>
             </div>
             <div class="open-line">
-                <input type="text" class="dotted-input" readonly>
+                <input type="text" class="dotted-input" value="{{ record.strengths_extra }}" readonly>
             </div>
             <div class="open-line">
                 <label>پیشنهاد بهبود:</label>
-                <input type="text" class="dotted-input" readonly>
+                <input type="text" class="dotted-input" value="{{ record.improvement }}" readonly>
             </div>
             <div class="open-line">
-                <input type="text" class="dotted-input" readonly>
+                <input type="text" class="dotted-input" value="{{ record.improvement_extra }}" readonly>
             </div>
         </div>
 
@@ -509,11 +527,11 @@
         <div class="footer-grid">
             <div class="footer-box" style="justify-content: flex-start;">
                 <label>نام و نام خانوادگی کارشناس نظارت حرفه‌ای:</label>
-                <input type="text" id="supervisorName" readonly>
+                <input type="text" id="supervisorName" value="{{ record.supervisor_name }}" readonly>
             </div>
             <div class="footer-box">
                 <label>امضای کارشناس نظارت حرفه‌ای:</label>
-                <input type="text" id="supervisorSignature" style="margin-top: auto; border-bottom: none;" readonly>
+                <input type="text" id="supervisorSignature" style="margin-top: auto; border-bottom: none;" value="{{ record.supervisor_signature }}" readonly>
             </div>
         </div>
     </div>
