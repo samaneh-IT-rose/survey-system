@@ -4,6 +4,8 @@
   var $ = function (id) { return document.getElementById(id); };
   var state = { page: 1, perPage: 10 };
   var contactsCache = [];
+  var PERMS = window.__PERMS__ || [];
+  function has(p) { return PERMS.indexOf(p) !== -1; }
 
   function qs() {
     var p = new URLSearchParams();
@@ -22,11 +24,15 @@
 
   function opButtons(r) {
     var prefix = window.__PREFIX__;
-    return '' +
-      '<a class="btn sm" title="ویرایش" href="' + prefix + '/?id=' + r.id + '">✏ ویرایش</a>' +
-      '<a class="btn sm" title="چاپ" target="_blank" href="' + prefix + '/print/' + r.id + '">🖨 چاپ</a>' +
-      '<a class="btn sm" title="PDF" href="' + API('/surveys/' + r.id + '/pdf') + '">📄 PDF</a>' +
-      '<button class="btn sm danger" title="حذف" data-del="' + r.id + '">🗑 حذف</button>';
+    var out = '';
+    if (has("edit")) out += '<a class="btn sm" title="ویرایش" href="' + prefix + '/?id=' + r.id + '">✏ ویرایش</a>';
+    if (has("print")) {
+      out += '<a class="btn sm" title="چاپ" target="_blank" href="' + prefix + '/print/' + r.id + '">🖨 چاپ</a>';
+      out += '<a class="btn sm" title="PDF" href="' + API('/surveys/' + r.id + '/pdf') + '">📄 PDF</a>';
+    }
+    if (has("delete")) out += '<button class="btn sm danger" title="حذف" data-del="' + r.id + '">🗑 حذف</button>';
+    if (!out) return '<span class="muted">فقط مشاهده</span>';
+    return out;
   }
 
   function render(data) {
@@ -112,11 +118,13 @@
     $("fcounty").disabled = true;
     state.page = 1; load();
   });
-  $("excelBtn").addEventListener("click", function () {
-    var p = new URLSearchParams(qs());
-    p.delete("page"); p.delete("per_page");
-    window.location.href = API("/surveys/export/excel?" + p.toString());
-  });
+  if ($("excelBtn")) {
+    $("excelBtn").addEventListener("click", function () {
+      var p = new URLSearchParams(qs());
+      p.delete("page"); p.delete("per_page");
+      window.location.href = API("/surveys/export/excel?" + p.toString());
+    });
+  }
 
   document.addEventListener("click", async function (ev) {
     var del = ev.target.closest("[data-del]");

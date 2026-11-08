@@ -64,3 +64,40 @@ def ensure_survey_columns(target_engine) -> list[str]:
                 conn.execute(text(f"ALTER TABLE surveys ADD COLUMN {name} {ddl}"))
                 added.append(name)
     return added
+
+
+# ستون‌های جدید جدول users (سطح کاربری و سطوح دسترسی) — مهاجرت خودکار idempotent
+USER_NEW_COLUMNS: dict[str, str] = {
+    # سطح کاربری: admin (مدیر سامانه) یا user (کاربر سامانه)
+    "level": "VARCHAR(20) NOT NULL DEFAULT 'user'",
+    # سطوح دسترسی «view,edit,print,export,delete» — خالی یعنی پیش‌فرض نقش
+    "permissions": "TEXT NOT NULL DEFAULT ''",
+}
+
+
+def ensure_user_columns(target_engine) -> list[str]:
+    """افزودن ستون‌های سطح کاربری/سطوح دسترسی به جدول users در صورت نبود.
+
+    کاربران موجود بی‌درنگ سازگار می‌شوند: هر کس نقش admin دارد سطحش
+    «مدیر سامانه» ثبت می‌شود؛ بقیه «کاربر سامانه» با دسترسی‌های پیش‌فرض نقش.
+    """
+    added: list[str] = []
+    inspector = inspect(target_engine)
+    if "users" not in inspector.get_table_names():
+        return added
+    existing = {c["name"] for c in inspector.get_columns("users")}
+    with target_engine.begin() as conn:
+        for name, ddl in USER_NEW_COLUMNS.items():
+            if name not in existing:
+                conn.execute(text(f"ALTER TABLE users ADD COLUMN {name} {ddl}"))
+                added.append(name)
+        if "level" in added:
+            # کاربران قدیمیِ مدیر → سطح مدیر سامانه (یک‌بار، فقط هنگام افزودن ستون)
+            conn.execute(text("UPDATE users SET level = 'admin' WHERE role = 'admin'"))
+    return added
+
+
+def ensure_schema_updates(target_engine) -> None:
+    """همهٔ مهاجرت‌های خودکار سبک — در شروع برنامه اجرا می‌شود."""
+    ensure_survey_columns(target_engine)
+    ensure_user_columns(target_engine)

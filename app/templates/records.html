@@ -8,7 +8,9 @@
     <h1>آرشیو فرم‌های نظرسنجی</h1>
     <div class="sub">مشاهده، ویرایش، چاپ و خروجی گرفتن از رکوردهای ذخیره‌شده</div>
   </div>
+  {% if user and user.has_perm('edit') %}
   <a class="btn primary sm" href="{{ prefix }}/">+ ثبت فرم جدید</a>
+  {% endif %}
 </div>
 
 <section class="card">
@@ -42,7 +44,9 @@
   <div class="actions" style="margin-top:12px">
     <button class="btn primary" id="applyBtn"><span class="icn">🔎</span> اعمال فیلتر</button>
     <button class="btn" id="resetBtn"><span class="icn">↺</span> حذف فیلترها</button>
+    {% if user and user.has_perm('export') %}
     <button class="btn" id="excelBtn"><span class="icn">📊</span> خروجی اکسل</button>
+    {% endif %}
   </div>
 </section>
 

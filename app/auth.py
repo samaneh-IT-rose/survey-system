@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
 """احراز هویت و سطوح دسترسی — قلب فاز کاربران.
 
+لایه‌های کنترل دسترسی (از بالا به پایین):
+۱) ورود به سامانه (سشن کوکی فعال) — همهٔ گاردها
+۲) سطح کاربری: «مدیر سامانه» همه‌چیز؛ «کاربر سامانه» بر اساس نقش/دسترسی
+۳) سطوح دسترسی: فقط خواندنی (view)، ثبت و ویرایش (edit)، چاپ (print)،
+   خروجی اکسل (export)، حذف رکورد (delete)
+
 دو گونه گارد داریم:
 - page_*  : برای صفحات HTML — به‌جای خطا، به login/تغییر رمز هدایت می‌کند
 - api_*   : برای APIها — خطای 401/403 JSON برمی‌گرداند
@@ -14,7 +20,7 @@ from fastapi import Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from .config import APP_PREFIX
-from .constants import ROLE_ADMIN, ROLE_OPERATOR
+from .constants import PERM_DENY_MESSAGES, PERM_EDIT, PERM_DELETE, PERM_EXPORT, PERM_PRINT, PERM_VIEW
 from .database import get_db
 from .models import User
 from .utils.security import SESSION_COOKIE, read_session_token
@@ -62,18 +68,21 @@ def page_user(request: Request, db: Session = Depends(get_db)) -> User:
     return user
 
 
-def page_staff(request: Request, db: Session = Depends(get_db)) -> User:
-    user = page_user(request, db)
-    if user.role not in (ROLE_ADMIN, ROLE_OPERATOR):
-        raise PageRedirect(f"{APP_PREFIX}/dashboard")
-    return user
+def _page_redirect_for_perm(perm: str) -> str:
+    """کاربرِ بدون دسترسی به جای خطا به داشبورد (خانهٔ امن خودش) هدایت می‌شود."""
+    return f"{APP_PREFIX}/dashboard"
 
 
-def page_admin(request: Request, db: Session = Depends(get_db)) -> User:
-    user = page_user(request, db)
-    if user.role != ROLE_ADMIN:
-        raise PageRedirect(f"{APP_PREFIX}/dashboard")
-    return user
+def page_require_perm(perm: str):
+    """گارد صفحه بر اساس سطوح دسترسی — مدیر سامانه همیشه مجاز است."""
+
+    def dep(request: Request, db: Session = Depends(get_db)) -> User:
+        user = page_user(request, db)
+        if not user.has_perm(perm):
+            raise PageRedirect(_page_redirect_for_perm(perm))
+        return user
+
+    return dep
 
 
 # ---------- APIها ----------
@@ -93,21 +102,64 @@ def api_user(request: Request, db: Session = Depends(get_db)) -> User:
     return user
 
 
-def api_staff(request: Request, db: Session = Depends(get_db)) -> User:
-    user = api_user(request, db)
-    if user.role not in (ROLE_ADMIN, ROLE_OPERATOR):
-        raise HTTPException(
-            status_code=403,
-            detail={"message": "این عملیات فقط برای مدیر و کارشناس مجاز است."},
-        )
+def api_require_perm(perm: str):
+    """گارد API بر اساس سطوح دسترسی — مدیر سامانه همیشه مجاز است."""
+
+    def dep(request: Request, db: Session = Depends(get_db)) -> User:
+        user = api_user(request, db)
+        if not user.has_perm(perm):
+            raise HTTPException(
+                status_code=403,
+                detail={"message": PERM_DENY_MESSAGES.get(perm, "شما به این عملیات دسترسی ندارید.")},
+            )
+        return user
+
+    return dep
+
+
+# ---------- گاردهای سازگار با نسخه‌های قبل (هنوز جایی استفاده می‌شوند) ----------
+
+def page_admin(request: Request, db: Session = Depends(get_db)) -> User:
+    """صفحات مدیریتی — فقط سطح «مدیر سامانه»."""
+    user = page_user(request, db)
+    if not user.is_admin_level:
+        raise PageRedirect(_page_redirect_for_perm("admin"))
+    return user
+
+
+def page_staff(request: Request, db: Session = Depends(get_db)) -> User:
+    """سازگاری با نسخهٔ قبل: کاربری که اجازهٔ ثبت/ویرایش فرم دارد."""
+    user = page_user(request, db)
+    if not user.has_perm(PERM_EDIT):
+        raise PageRedirect(_page_redirect_for_perm(PERM_EDIT))
     return user
 
 
 def api_admin(request: Request, db: Session = Depends(get_db)) -> User:
+    """APIهای مدیریتی — فقط سطح «مدیر سامانه»."""
     user = api_user(request, db)
-    if user.role != ROLE_ADMIN:
+    if not user.is_admin_level:
         raise HTTPException(
             status_code=403,
             detail={"message": "این عملیات فقط برای مدیر سامانه مجاز است."},
         )
     return user
+
+
+def api_staff(request: Request, db: Session = Depends(get_db)) -> User:
+    """سازگاری با نسخهٔ قبل: کاربری که اجازهٔ ثبت/ویرایش فرم دارد."""
+    user = api_user(request, db)
+    if not user.has_perm(PERM_EDIT):
+        raise HTTPException(
+            status_code=403,
+            detail={"message": PERM_DENY_MESSAGES[PERM_EDIT]},
+        )
+    return user
+
+
+# برای خوانایی کد در روترها
+perm_view = api_require_perm(PERM_VIEW)
+perm_edit = api_require_perm(PERM_EDIT)
+perm_print = api_require_perm(PERM_PRINT)
+perm_export = api_require_perm(PERM_EXPORT)
+perm_delete = api_require_perm(PERM_DELETE)

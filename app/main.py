@@ -28,10 +28,11 @@ from .routers import (
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
-    # ستون‌های جدید فیلدهای فرم نمونه به دیتابیس موجود اضافه می‌شود (بدون دست‌زدن به داده‌ها)
-    from .database import ensure_survey_columns
+    # مهاجرت‌های خودکار سبک: ستون‌های فیلدهای فرم نمونه + سطح کاربری و
+    # سطوح دسترسی کاربران — بدون دست‌زدن به داده‌های موجود
+    from .database import ensure_schema_updates
 
-    ensure_survey_columns(engine)
+    ensure_schema_updates(engine)
     _bootstrap_admin()
     yield
 
@@ -44,7 +45,7 @@ def _bootstrap_admin() -> None:
     """
     from sqlalchemy import func, select
 
-    from .constants import ROLE_ADMIN
+    from .constants import LEVEL_ADMIN, ROLE_ADMIN
     from .models import User
     from .utils.security import hash_password
 
@@ -57,6 +58,7 @@ def _bootstrap_admin() -> None:
             password_hash=hash_password("admin123"),
             full_name="مدیر سامانه",
             role=ROLE_ADMIN,
+            level=LEVEL_ADMIN,
             is_active=True,
             must_change_password=True,
         )

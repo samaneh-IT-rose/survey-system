@@ -74,6 +74,8 @@ def build_excel(db: Session, filters: dict) -> tuple[bytes, str]:
     headers = [
         "ردیف", "نام", "نام خانوادگی", "کد ملی", "شماره تماس",
         "استان", "شهرستان", "تاریخ نظرسنجی (شمسی)", "وضعیت تماس",
+        "مشاور", "نوع خدمت", "تاریخ دریافت خدمت (شمسی)",
+        "نقاط قوت مشاوره تلفنی", "پیشنهاد بهبود", "کارشناس نظارت حرفه‌ای",
     ] + [f"سؤال {i + 1}: {q.text}" for i, q in enumerate(questions)] + [
         "زمان ثبت (شمسی)",
     ]
@@ -98,9 +100,13 @@ def build_excel(db: Session, filters: dict) -> tuple[bytes, str]:
     for i, s in enumerate(rows, start=1):
         answers = {a.question_id: a.value_label for a in s.answers}
         contact_text = s.contact_option.text if s.contact_option else "—"
+        strengths = " ".join(x for x in [s.strengths or "", s.strengths_extra or ""] if x)
+        improvement = " ".join(x for x in [s.improvement or "", s.improvement_extra or ""] if x)
         values = [
             i, s.first_name, s.last_name, s.national_code, s.phone,
             s.province.name, s.county.name, gdate_to_jalali_str(s.survey_date), contact_text,
+            s.counselor or "", s.service_type or "", s.service_date or "",
+            strengths, improvement, s.supervisor_name or "",
         ] + [answers.get(q.id, "") for q in questions] + [
             gdate_to_jalali_str(s.created_at.date()) if s.created_at else "",
         ]
@@ -111,7 +117,7 @@ def build_excel(db: Session, filters: dict) -> tuple[bytes, str]:
             c.alignment = CENTER if col in (1, 4, 5, 8) else RIGHT
 
     # عرض ستون‌ها
-    base_widths = [6, 14, 16, 14, 14, 12, 14, 16, 24]
+    base_widths = [6, 14, 16, 14, 14, 12, 14, 16, 24, 14, 14, 16, 30, 30, 18]
     for col, w in enumerate(base_widths, start=1):
         ws.column_dimensions[get_column_letter(col)].width = w
     for i in range(len(questions)):

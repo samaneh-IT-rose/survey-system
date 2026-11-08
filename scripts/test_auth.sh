@@ -94,8 +94,9 @@ if not pw_ok:
 print('  ✅ لاگ کامل است — رویدادهای لازم همگی ثبت شده‌اند' if not missing else f'  ❌ رویدادهای جاافتاده: {missing}')
 EOF
 
-echo "== 9) PDF برای مشاهده‌گر (دسترسی دیدن) =="
-chk "مشاهده‌گر: PDF رکورد 1 → 200" "200" "$(curl -s -b "$CV" "$B/api/surveys/1/pdf" -o /tmp/pdf_v.pdf -w '%{http_code}' --max-time 60)"
+echo "== 9) PDF بر اساس دسترسی چاپ =="
+chk "مشاهده‌گر (بدون دسترسی چاپ): PDF → 403" "403" "$(curl -s -b "$CV" "$B/api/surveys/1/pdf" -o /dev/null -w '%{http_code}' --max-time 60)"
+chk "کارشناس (دارای دسترسی چاپ): PDF → 200" "200" "$(curl -s -b "$CO" "$B/api/surveys/1/pdf" -o /tmp/pdf_v.pdf -w '%{http_code}' --max-time 60)"
 head -c 4 /tmp/pdf_v.pdf | grep -q "%PDF" && echo "  ✅ فایل واقعی PDF" || echo "  ⚠️ خروجی PDF نامعتبر"
 
 echo ""

@@ -15,12 +15,14 @@
         <span class="brand-name">{{ org_name }}<small>{{ app_title }}</small></span>
       </a>
       <nav class="mainnav" aria-label="ناوبری اصلی">
-        {% if user and user.role != 'viewer' %}
+        {% if user and user.has_perm('edit') %}
         <a href="{{ prefix }}/" data-nav="form">فرم نظرسنجی</a>
         {% endif %}
+        {% if user and user.has_perm('view') %}
         <a href="{{ prefix }}/records" data-nav="records">آرشیو فرم‌ها</a>
         <a href="{{ prefix }}/dashboard" data-nav="dashboard">داشبورد</a>
-        {% if user and user.role == 'admin' %}
+        {% endif %}
+        {% if user and user.is_admin_level %}
         <a href="{{ prefix }}/template" data-nav="template">مدیریت الگو</a>
         <a href="{{ prefix }}/users" data-nav="users">کاربران</a>
         <a href="{{ prefix }}/api-keys" data-nav="apikeys">کلیدهای API</a>
@@ -36,10 +38,10 @@
         </div>
         <button type="button" class="modebtn" id="modeToggle" aria-label="تغییر حالت روز و شب">☀ روز / شب</button>
         {% if user %}
-        <div class="userchip" title="{{ user.full_name }} ({{ user.role_label }})">
+        <div class="userchip" title="{{ user.full_name }} — {{ user.level_label }} ({{ user.role_label }})">
           <span class="userchip-avatar">{{ (user.full_name or user.username)[:1] }}</span>
           <span class="userchip-name">{{ user.full_name }}</span>
-          <span class="userchip-role role-{{ user.role }}">{{ user.role_label }}</span>
+          <span class="userchip-role role-{{ user.role }}" title="سطح: {{ user.level_label }} — نقش: {{ user.role_label }}">{{ user.role_label }}</span>
           <a class="userchip-logout" href="{{ prefix }}/logout" title="خروج">خروج</a>
         </div>
         {% endif %}
@@ -58,6 +60,7 @@
   <div id="toastArea" aria-live="polite"></div>
 
   <script>window.__PREFIX__ = {{ prefix | tojson }};</script>
+  {% if user %}<script>window.__PERMS__ = {{ user.effective_permissions | tojson }};</script>{% endif %}
   <script src="{{ asset('static/js/theme.js') }}"></script>
   <script src="{{ asset('static/js/common.js') }}"></script>
   {% block scripts %}{% endblock %}

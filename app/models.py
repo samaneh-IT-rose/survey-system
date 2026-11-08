@@ -19,6 +19,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from .constants import LEVEL_ADMIN, LEVEL_LABELS, ROLE_ADMIN, ROLE_LABELS, effective_permissions, parse_permissions
 from .database import Base
 
 
@@ -152,8 +153,15 @@ class SurveyAnswer(Base):
 
 
 class User(Base):
-    """کاربر سامانه با نقش (admin / operator / viewer).
+    """کاربر سامانه با سطح کاربری، نقش و سطوح دسترسی.
 
+    - سطح کاربری دو حالت دارد: «مدیر سامانه» (دسترسی کامل حتی به مدیریت
+      کاربران/الگو/کلیدها/لاگ) و «کاربر سامانه» (فقط بر اساس نقش و دسترسی‌ها).
+    - نقش‌ها: مدیر، کارشناس نظرسنجی، ورود داده، ناظر حرفه‌ای، گزارش‌گیر،
+      مشاهده‌گر — هر نقش یک بستهٔ پیش‌فرض از سطوح دسترسی دارد.
+    - سطوح دسترسی (کاما جدا در ستون permissions): فقط خواندنی، ثبت و ویرایش،
+      چاپ، خروجی اکسل، حذف رکورد. اگر خالی باشد دسترسی‌های پیش‌فرض نقش اعمال
+      می‌شود تا کاربران موجود پس از به‌روزرسانی بدون تغییر رفتار کنند.
     - رمز به‌صورت PBKDF2-SHA256 ذخیره می‌شود (بدون وابستگی بیرونی).
     - auth_source برای اتصال آینده به SSO است: «local» یعنی رمز داخلی؛
       بعداً می‌تواند «sso» شود بدون تغییر ساختار جداول.
@@ -166,12 +174,44 @@ class User(Base):
     password_hash: Mapped[str | None] = mapped_column(String(200), nullable=True)
     full_name: Mapped[str] = mapped_column(String(120), nullable=False, default="")
     role: Mapped[str] = mapped_column(String(20), nullable=False, default="viewer")
+    # سطح کاربری: admin (مدیر سامانه) یا user (کاربر سامانه)
+    level: Mapped[str] = mapped_column(String(20), nullable=False, default="user", server_default="user")
+    # سطوح دسترسی به‌صورت «view,edit,print,export,delete» — خالی یعنی پیش‌فرض نقش
+    permissions: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     # اگر True باشد، کاربر تا تغییر رمز به هیچ صفحه‌ای جز تغییر رمز راه ندارد
     must_change_password: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     auth_source: Mapped[str] = mapped_column(String(20), nullable=False, default="local")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_now_tz)
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # ---------- خصوصیات کمکی برای API و قالب‌ها ----------
+
+    @property
+    def is_admin_level(self) -> bool:
+        """مدیر سامانه — همهٔ بخش‌ها؛ سازگار با کاربران قدیمی که فقط role دارند."""
+        return self.level == LEVEL_ADMIN or self.role == ROLE_ADMIN
+
+    @property
+    def role_label(self) -> str:
+        return ROLE_LABELS.get(self.role, self.role)
+
+    @property
+    def level_label(self) -> str:
+        return LEVEL_LABELS.get(self.level, self.level)
+
+    @property
+    def permission_keys(self) -> list[str]:
+        """فهرست دسترسی‌های صریح ذخیره‌شده برای این کاربر."""
+        return parse_permissions(self.permissions)
+
+    @property
+    def effective_permissions(self) -> list[str]:
+        """دسترسی‌های نهایی — با منطق سطح/نقش/دسترسی‌های صریح."""
+        return effective_permissions(self.level, self.role, self.permissions)
+
+    def has_perm(self, perm: str) -> bool:
+        return perm in self.effective_permissions
 
 
 class ApiKey(Base):

@@ -1,12 +1,35 @@
-/* مدیریت کاربران — فقط مدیر */
+/* مدیریت کاربران — فقط مدیر سامانه: سطح کاربری، نقش و سطوح دسترسی */
 (function () {
   var T = document.getElementById("usersTable").querySelector("tbody");
   var modal = document.getElementById("userModal");
-  var me = null; // اطلاعات کاربر جلی (مدیر فعلی) از سرور نمی‌آید؛ خودش را ویرایش نمی‌کند
+
+  var PERM_LABELS = {
+    view: "فقط خواندنی",
+    edit: "ثبت و ویرایش",
+    print: "چاپ و PDF",
+    export: "خروجی اکسل",
+    delete: "حذف رکورد",
+  };
+  // دسترسی‌های پیش‌فرض هر نقش — هماهنگ با سرور
+  var ROLE_DEFAULTS = {
+    admin: ["view", "edit", "print", "export", "delete"],
+    operator: ["view", "edit", "print", "export"],
+    data_entry: ["view", "edit", "print"],
+    supervisor: ["view", "edit", "print"],
+    reporter: ["view", "print", "export"],
+    viewer: ["view"],
+  };
 
   function faDate(iso) {
     if (!iso) return "—";
     return iso.replace("T", " ").slice(0, 16);
+  }
+
+  function permChips(perms) {
+    if (!perms || !perms.length) return "<span class='muted'>پیش‌فرض نقش</span>";
+    return perms.map(function (p) {
+      return "<span class='permchip perm-" + p + "'>" + (PERM_LABELS[p] || p) + "</span>";
+    }).join(" ");
   }
 
   function row(u) {
@@ -15,7 +38,9 @@
       "<td>" + u.id + "</td>" +
       "<td>" + u.full_name + "</td>" +
       "<td dir='ltr'>" + u.username + "</td>" +
+      "<td><span class='levelbadge level-" + u.level + "'>" + u.level_label + "</span></td>" +
       "<td><span class='rolebadge role-" + u.role + "'>" + u.role_label + "</span></td>" +
+      "<td class='permcell'>" + permChips(u.effective_permissions) + "</td>" +
       "<td>" + (u.is_active ? "<span class='badge ok'>فعال</span>" : "<span class='badge off'>غیرفعال</span>") + "</td>" +
       "<td>" + faDate(u.last_login_at) + "</td>" +
       "<td class='actions'></td>";
@@ -67,6 +92,30 @@
     }).catch(function (e) { S.toast(e.message, "error"); });
   }
 
+  function checkedPerms() {
+    var out = [];
+    document.querySelectorAll("#u_perms input[type=checkbox]").forEach(function (cb) {
+      if (cb.checked) out.push(cb.value);
+    });
+    return out;
+  }
+
+  function setCheckedPerms(perms) {
+    document.querySelectorAll("#u_perms input[type=checkbox]").forEach(function (cb) {
+      cb.checked = perms.indexOf(cb.value) !== -1;
+    });
+  }
+
+  function applyLevelUi() {
+    var isAdmin = document.getElementById("u_level").value === "admin";
+    document.querySelectorAll("#u_perms input[type=checkbox]").forEach(function (cb) {
+      cb.disabled = isAdmin;
+    });
+    document.getElementById("u_level_hint").textContent = isAdmin
+      ? "مدیر سامانه به همهٔ بخش‌ها از جمله مدیریت کاربران دسترسی دارد."
+      : "کاربر سامانه فقط بر اساس نقش و سطوح دسترسی وارد می‌شود.";
+  }
+
   function openModal(u) {
     var isEdit = !!u;
     document.getElementById("userModalTitle").textContent = isEdit ? "ویرایش کاربر" : "کاربر جدید";
@@ -76,7 +125,13 @@
     un.disabled = isEdit; // نام کاربری پس از ساخت تغییر نمی‌کند
     document.getElementById("u_username_hint").style.display = isEdit ? "none" : "inline";
     document.getElementById("u_fullname").value = isEdit ? u.full_name : "";
+    document.getElementById("u_level").value = isEdit ? u.level : "user";
     document.getElementById("u_role").value = isEdit ? u.role : "operator";
+    if (isEdit && u.permissions && u.permissions.length) {
+      setCheckedPerms(u.permissions);
+    } else {
+      setCheckedPerms(ROLE_DEFAULTS[isEdit ? u.role : "operator"] || ["view"]);
+    }
     var pw = document.getElementById("u_password");
     if (isEdit) {
       pw.value = "";
@@ -87,11 +142,28 @@
       pw.required = true;
       document.getElementById("u_password_label").textContent = "رمز عبور اولیه (حداقل ۶ نویسه) — کاربر در اولین ورود مجبور به تغییر می‌شود";
     }
+    applyLevelUi();
     modal.hidden = false;
   }
 
   document.getElementById("btnNewUser").onclick = function () { openModal(null); };
   document.getElementById("userCancel").onclick = function () { modal.hidden = true; };
+
+  document.getElementById("u_level").addEventListener("change", function () {
+    // سطح مدیر: همهٔ تیک‌ها روشن (ولی غیرقابل تغییر)
+    if (this.value === "admin") {
+      setCheckedPerms(Object.keys(PERM_LABELS));
+    } else {
+      var role = document.getElementById("u_role").value;
+      setCheckedPerms(ROLE_DEFAULTS[role] || ["view"]);
+    }
+    applyLevelUi();
+  });
+
+  document.getElementById("u_role").addEventListener("change", function () {
+    if (document.getElementById("u_level").value === "admin") return;
+    setCheckedPerms(ROLE_DEFAULTS[this.value] || ["view"]);
+  });
 
   document.getElementById("userForm").onsubmit = function (ev) {
     ev.preventDefault();
@@ -99,6 +171,8 @@
     var body = {
       full_name: document.getElementById("u_fullname").value.trim(),
       role: document.getElementById("u_role").value,
+      level: document.getElementById("u_level").value,
+      permissions: checkedPerms(),
     };
     var pw = document.getElementById("u_password").value;
     var p;

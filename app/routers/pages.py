@@ -6,8 +6,9 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..auth import page_admin, page_staff, page_user
+from ..auth import page_admin, page_require_perm
 from ..config import APP_PREFIX, APP_TITLE, BASE_DIR, LOGO_URL, ORG_NAME
+from ..constants import PERM_EDIT, PERM_PRINT, PERM_VIEW
 from ..database import get_db
 from ..models import Survey, User
 from ..utils.jalali import gregorian_to_jalali, is_jalali_leap, today_jalali_str
@@ -62,7 +63,7 @@ def _year_range() -> list[int]:
 
 
 @router.get("/", response_class=HTMLResponse)
-def form_page(request: Request, user: User = Depends(page_staff), db: Session = Depends(get_db)):
+def form_page(request: Request, user: User = Depends(page_require_perm(PERM_EDIT)), db: Session = Depends(get_db)):
     from ..models import ContactOption, Question
 
     questions = db.scalars(
@@ -89,12 +90,12 @@ def form_page(request: Request, user: User = Depends(page_staff), db: Session = 
 
 
 @router.get("/records", response_class=HTMLResponse)
-def records_page(request: Request, user: User = Depends(page_user)):
+def records_page(request: Request, user: User = Depends(page_require_perm(PERM_VIEW))):
     return templates.TemplateResponse(request, "records.html", _ctx(user, page_title="آرشیو فرم‌ها"))
 
 
 @router.get("/dashboard", response_class=HTMLResponse)
-def dashboard_page(request: Request, user: User = Depends(page_user)):
+def dashboard_page(request: Request, user: User = Depends(page_require_perm(PERM_VIEW))):
     return templates.TemplateResponse(request, "dashboard.html", _ctx(user, page_title="داشبورد آماری"))
 
 
@@ -105,7 +106,27 @@ def template_page(request: Request, user: User = Depends(page_admin)):
 
 @router.get("/users", response_class=HTMLResponse)
 def users_page(request: Request, user: User = Depends(page_admin)):
-    return templates.TemplateResponse(request, "users.html", _ctx(user, page_title="مدیریت کاربران"))
+    from ..constants import LEVEL_LABELS, PERMISSIONS, ROLE_DEFAULT_PERMS, ROLE_DESCRIPTIONS, ROLE_LABELS, VALID_LEVELS, VALID_ROLES
+
+    return templates.TemplateResponse(
+        request,
+        "users.html",
+        _ctx(
+            user,
+            page_title="مدیریت کاربران",
+            levels=[{"value": lv, "label": LEVEL_LABELS[lv]} for lv in VALID_LEVELS],
+            roles=[
+                {
+                    "value": role,
+                    "label": ROLE_LABELS[role],
+                    "description": ROLE_DESCRIPTIONS[role],
+                    "default_permissions": list(ROLE_DEFAULT_PERMS[role]),
+                }
+                for role in VALID_ROLES
+            ],
+            permissions=[{"value": key, "label": label} for key, label in PERMISSIONS],
+        ),
+    )
 
 
 @router.get("/logs", response_class=HTMLResponse)
@@ -119,7 +140,7 @@ def api_keys_page(request: Request, user: User = Depends(page_admin)):
 
 
 @router.get("/print/{survey_id}", response_class=HTMLResponse)
-def print_page(survey_id: int, request: Request, user: User = Depends(page_user), db: Session = Depends(get_db)):
+def print_page(survey_id: int, request: Request, user: User = Depends(page_require_perm(PERM_PRINT)), db: Session = Depends(get_db)):
     from ..models import Survey
     from ..services.sheet import build_sheet_context
 

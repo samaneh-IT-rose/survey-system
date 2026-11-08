@@ -8,7 +8,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
-from ..auth import api_user
+from ..auth import api_require_perm
+from ..constants import PERM_PRINT
 from ..database import get_db
 from ..models import Survey, User
 from ..services.pdf_export import render_pdf_for_record
@@ -18,7 +19,7 @@ router = APIRouter(prefix="/api/surveys", tags=["exports"])
 
 
 @router.get("/{survey_id}/pdf")
-async def survey_pdf(survey_id: int, request: Request, user: User = Depends(api_user), db: Session = Depends(get_db)):
+async def survey_pdf(survey_id: int, request: Request, user: User = Depends(api_require_perm(PERM_PRINT)), db: Session = Depends(get_db)):
     s = db.get(Survey, survey_id)
     if s is None:
         raise HTTPException(404, detail={"message": "رکورد یافت نشد."})

@@ -13,7 +13,9 @@
         <th>#</th>
         <th>نام و نام خانوادگی</th>
         <th>نام کاربری</th>
+        <th>سطح کاربری</th>
         <th>نقش</th>
+        <th>سطوح دسترسی</th>
         <th>وضعیت</th>
         <th>آخرین ورود</th>
         <th>عملیات</th>
@@ -35,13 +37,32 @@
       <label class="field"><span>نام و نام خانوادگی</span>
         <input type="text" id="u_fullname" required>
       </label>
+      <label class="field"><span>سطح کاربری</span>
+        <select id="u_level">
+          {% for lv in levels %}
+          <option value="{{ lv.value }}">{{ lv.label }}{% if lv.value == 'admin' %} — همهٔ دسترسی‌ها{% endif %}</option>
+          {% endfor %}
+        </select>
+        <small class="muted" id="u_level_hint">کاربر سامانه فقط بر اساس نقش و سطوح دسترسی وارد می‌شود.</small>
+      </label>
       <label class="field"><span>نقش</span>
         <select id="u_role">
-          <option value="operator">کارشناس — ثبت و ویرایش فرم</option>
-          <option value="viewer">مشاهده‌گر — فقط داشبورد و آرشیو</option>
-          <option value="admin">مدیر — همهٔ دسترسی‌ها</option>
+          {% for r in roles %}
+          <option value="{{ r.value }}">{{ r.label }} — {{ r.description }}</option>
+          {% endfor %}
         </select>
       </label>
+      <div class="field">
+        <span>سطوح دسترسی</span>
+        <div class="permsgrid" id="u_perms">
+          {% for p in permissions %}
+          <label class="permitem">
+            <input type="checkbox" value="{{ p.value }}"> {{ p.label }}
+          </label>
+          {% endfor %}
+        </div>
+        <small class="muted" id="u_perms_hint">با تغییر نقش، دسترسی‌های پیش‌فرض آن نقش تیک می‌خورد؛ می‌توانید دست‌کاری کنید.</small>
+      </div>
       <label class="field"><span id="u_password_label">رمز عبور اولیه (حداقل ۶ نویسه) — کاربر در اولین ورود مجبور به تغییر می‌شود</span>
         <input type="text" id="u_password" dir="ltr" autocomplete="off" minlength="6" required>
       </label>

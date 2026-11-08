@@ -9,8 +9,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
-from ..auth import api_admin, api_staff, api_user
-from ..constants import RATING_LABEL_TO_SCORE
+from ..auth import api_require_perm
+from ..constants import PERM_DELETE, PERM_EDIT, PERM_EXPORT, PERM_VIEW, RATING_LABEL_TO_SCORE
 from ..database import get_db
 from ..models import Survey, SurveyAnswer, User
 from ..services.validation import validate_survey_payload
@@ -101,7 +101,7 @@ def _save_answers(db: Session, survey: Survey, clean: dict) -> None:
 
 
 @router.post("")
-def create_survey(payload: dict, request: Request, user: User = Depends(api_staff), db: Session = Depends(get_db)):
+def create_survey(payload: dict, request: Request, user: User = Depends(api_require_perm(PERM_EDIT)), db: Session = Depends(get_db)):
     clean, errors = validate_survey_payload(db, payload)
     if errors:
         raise HTTPException(status_code=422, detail={"message": "اطلاعات فرم معتبر نیست.", "errors": errors})
@@ -144,7 +144,7 @@ def list_surveys(
     date_to: str | None = None,
     page: int = 1,
     per_page: int = 10,
-    user: User = Depends(api_user),
+    user: User = Depends(api_require_perm(PERM_VIEW)),
     db: Session = Depends(get_db),
 ):
     per_page = max(1, min(per_page, 100))
@@ -203,10 +203,10 @@ def export_excel(
     contact_option_id: int | None = None,
     date_from: str | None = None,
     date_to: str | None = None,
-    user: User = Depends(api_staff),
+    user: User = Depends(api_require_perm(PERM_EXPORT)),
     db: Session = Depends(get_db),
 ):
-    """خروجی اکسل همان فیلترهای فهرست (بدون صفحه‌بندی)."""
+    """خروجی اکسل همان فیلترهای فهرست (بدون صفحه‌بندی) — دسترسی «خروجی اکسل»."""
     from ..services.excel_export import build_excel
 
     filters = dict(
@@ -228,7 +228,7 @@ def export_excel(
 
 
 @router.get("/{survey_id}")
-def get_survey(survey_id: int, user: User = Depends(api_user), db: Session = Depends(get_db)):
+def get_survey(survey_id: int, user: User = Depends(api_require_perm(PERM_VIEW)), db: Session = Depends(get_db)):
     s = db.get(Survey, survey_id)
     if s is None:
         raise HTTPException(status_code=404, detail={"message": "رکورد یافت نشد."})
@@ -237,7 +237,7 @@ def get_survey(survey_id: int, user: User = Depends(api_user), db: Session = Dep
 
 @router.patch("/{survey_id}")
 @router.put("/{survey_id}")
-def update_survey(survey_id: int, payload: dict, request: Request, user: User = Depends(api_staff), db: Session = Depends(get_db)):
+def update_survey(survey_id: int, payload: dict, request: Request, user: User = Depends(api_require_perm(PERM_EDIT)), db: Session = Depends(get_db)):
     s = db.get(Survey, survey_id)
     if s is None:
         raise HTTPException(status_code=404, detail={"message": "رکورد یافت نشد."})
@@ -271,7 +271,7 @@ def update_survey(survey_id: int, payload: dict, request: Request, user: User = 
 
 
 @router.delete("/{survey_id}")
-def delete_survey(survey_id: int, request: Request, user: User = Depends(api_admin), db: Session = Depends(get_db)):
+def delete_survey(survey_id: int, request: Request, user: User = Depends(api_require_perm(PERM_DELETE)), db: Session = Depends(get_db)):
     s = db.get(Survey, survey_id)
     if s is None:
         raise HTTPException(status_code=404, detail={"message": "رکورد یافت نشد."})

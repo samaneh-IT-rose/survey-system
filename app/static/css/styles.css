@@ -436,3 +436,33 @@ html[data-mode="dark"] .badge.off { background: #26303c; color: #9ca3af; }
   font-size: 13px; user-select: all; }
 html[data-mode="dark"] .keybanner { background: #33230a; border-color: #92600a; color: #fbbf24; }
 html[data-mode="dark"] .keybanner code { background: #1a1408; border-color: #92600a; color: #fde68a; }
+
+/* --- سطوح کاربری، نقش‌های جدید و سطوح دسترسی (مدیریت کاربران) --- */
+.levelbadge { font-size: 11.5px; padding: 3px 10px; border-radius: 999px; font-weight: 600; }
+.levelbadge.level-admin { background: #fee2e2; color: #b91c1c; }
+.levelbadge.level-user { background: #ecfdf5; color: #047857; }
+html[data-mode="dark"] .levelbadge.level-admin { background: #450a0a; color: #fca5a5; }
+html[data-mode="dark"] .levelbadge.level-user { background: #022c22; color: #6ee7b7; }
+
+.rolebadge.role-data_entry { background: #fef3c7; color: #b45309; }
+.rolebadge.role-supervisor { background: #ede9fe; color: #6d28d9; }
+.rolebadge.role-reporter { background: #cffafe; color: #0e7490; }
+html[data-mode="dark"] .rolebadge.role-data_entry { background: #451a03; color: #fcd34d; }
+html[data-mode="dark"] .rolebadge.role-supervisor { background: #2e1065; color: #c4b5fd; }
+html[data-mode="dark"] .rolebadge.role-reporter { background: #083344; color: #67e8f9; }
+
+.permcell { max-width: 220px; }
+.permchip { display: inline-block; font-size: 10.5px; padding: 2px 8px; border-radius: 999px;
+  background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; margin: 1px 0; }
+.permchip.perm-delete { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+.permchip.perm-edit { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+.permchip.perm-export { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
+html[data-mode="dark"] .permchip { background: #1e293b; color: #cbd5e1; border-color: #334155; }
+html[data-mode="dark"] .permchip.perm-delete { background: #450a0a; color: #fca5a5; border-color: #7f1d1d; }
+html[data-mode="dark"] .permchip.perm-edit { background: #172554; color: #93c5fd; border-color: #1e3a8a; }
+html[data-mode="dark"] .permchip.perm-export { background: #052e16; color: #86efac; border-color: #14532d; }
+
+.permsgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 12px; background: var(--bg); }
+.permsgrid .permitem { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text); }
+.permsgrid .permitem input { accent-color: var(--primary); }
