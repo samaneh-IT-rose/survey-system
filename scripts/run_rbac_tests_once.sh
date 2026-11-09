@@ -3,6 +3,7 @@
 set -u
 APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$APP_DIR"
+mkdir -p "$APP_DIR/logs"
 export SURVEY_DATABASE_URL="sqlite:////$APP_DIR/data/test_rbac.db"
 export SURVEY_SELF_URL="http://127.0.0.1:3010"
 LOG="$APP_DIR/logs/test-server.log"
