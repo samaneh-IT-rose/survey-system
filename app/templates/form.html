@@ -61,9 +61,14 @@
         <div class="err"></div>
       </div>
       <div class="field" id="f-service_date">
-        <label for="service_date">تاریخ دریافت خدمت</label>
-        <input id="service_date" name="service_date" type="text" inputmode="numeric" maxlength="10" placeholder="مثلاً ۱۴۰۵/۰۵/۱۰">
-        <div class="hint">اختیاری — قالب شمسی مانند ۱۴۰۵/۰۵/۱۰ (ارقام فارسی هم پذیرفته می‌شود).</div>
+        <label for="sy">تاریخ دریافت خدمت (شمسی)</label>
+        <div class="datebox">
+          <select id="sy" aria-label="سال دریافت خدمت"></select>
+          <select id="sm" aria-label="ماه دریافت خدمت"></select>
+          <select id="sd" aria-label="روز دریافت خدمت"></select>
+          <button type="button" class="todaybtn" id="svcClearBtn">پاک‌کردن</button>
+        </div>
+        <div class="hint">اختیاری — مانند تاریخ نظرسنجی از کادرهای سال/ماه/روز انتخاب کنید؛ «پاک‌کردن» فیلد را خالی می‌کند.</div>
         <div class="err"></div>
       </div>
       <div class="field" id="f-survey_date">

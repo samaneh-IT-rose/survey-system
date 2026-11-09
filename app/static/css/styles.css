@@ -483,3 +483,9 @@ html[data-mode="dark"] .permchip.perm-export { background: #052e16; color: #86ef
 .eyebtn:hover { opacity: 1; background: var(--soft); }
 .eyebtn:focus-visible { opacity: 1; outline: 2px solid var(--primary); outline-offset: 1px; }
 
+/* ===== تاریخ دریافت خدمت شمسی — سه‌کادری مثل تاریخ نظرسنجی ===== */
+#f-service_date { grid-column: span 2; }
+@media (max-width: 560px) { #f-service_date { grid-column: auto; } }
+.datebox #sy { min-width: 84px; }
+.datebox #sm { min-width: 104px; }
+.datebox #sd { min-width: 70px; }

@@ -13,26 +13,29 @@
   function isLeap(jy) { return (boot.leapYears || []).indexOf(jy) !== -1; }
   function monthLen(jy, jm) { return jm <= 6 ? 31 : (jm <= 11 ? 30 : (isLeap(jy) ? 30 : 29)); }
 
-  function fillYearSelect() {
-    var sel = $("jy");
+  function fillYearSelect(prefix, ph) {
+    var sel = $(prefix + "y");
+    if (ph) { var p = document.createElement("option"); p.value = ""; p.textContent = ph; sel.appendChild(p); }
     (boot.years || []).slice().sort(function (a, b) { return b - a; }).forEach(function (y) {
       var o = document.createElement("option");
       o.value = y; o.textContent = window.S.faNum(y);
       sel.appendChild(o);
     });
   }
-  function fillMonthSelect() {
-    var sel = $("jm");
+  function fillMonthSelect(prefix, ph) {
+    var sel = $(prefix + "m");
+    if (ph) { var p = document.createElement("option"); p.value = ""; p.textContent = ph; sel.appendChild(p); }
     MONTH_NAMES.forEach(function (name, i) {
       var o = document.createElement("option");
       o.value = i + 1; o.textContent = name;
       sel.appendChild(o);
     });
   }
-  function fillDaySelect() {
-    var jy = +$("jy").value, jm = +$("jm").value, jd = +$("jd").value;
-    var sel = $("jd");
+  function fillDaySelect(prefix, ph) {
+    var jy = +$(prefix + "y").value, jm = +$(prefix + "m").value, jd = +$(prefix + "d").value;
+    var sel = $(prefix + "d");
     sel.innerHTML = "";
+    if (ph) { var p = document.createElement("option"); p.value = ""; p.textContent = ph; sel.appendChild(p); }
     var len = monthLen(jy, jm);
     for (var d = 1; d <= len; d++) {
       var o = document.createElement("option");
@@ -41,19 +44,26 @@
     }
     if (jd && jd <= len) sel.value = jd;
   }
-  function getDateStr() {
-    var jy = $("jy").value, jm = $("jm").value, jd = $("jd").value;
+  function getDateStr(prefix) {
+    var jy = $(prefix + "y").value, jm = $(prefix + "m").value, jd = $(prefix + "d").value;
     if (!jy || !jm || !jd) return "";
     return jy + "/" + String(jm).padStart(2, "0") + "/" + String(jd).padStart(2, "0");
   }
-  function setDateStr(str) {
+  function setDateStr(str, prefix) {
     if (!str) return;
     var parts = window.S.toEnDigits(str).trim().split("/");
     if (parts.length !== 3) return;
-    $("jy").value = parts[0];
-    $("jm").value = String(parseInt(parts[1], 10));
-    fillDaySelect();
-    $("jd").value = String(parseInt(parts[2], 10));
+    $(prefix + "y").value = parts[0];
+    $(prefix + "m").value = String(parseInt(parts[1], 10));
+    fillDaySelect(prefix, prefix === "s" ? "روز…" : "");
+    $(prefix + "d").value = String(parseInt(parts[2], 10));
+  }
+  /* خالی‌کردن تاریخ اختیاری (مثل تاریخ دریافت خدمت) */
+  function clearDate(prefix) {
+    $(prefix + "y").value = "";
+    $(prefix + "m").value = "";
+    fillDaySelect(prefix, prefix === "s" ? "روز…" : "");
+    $(prefix + "d").value = "";
   }
 
   /* ---------- استان و شهرستان ---------- */
@@ -141,11 +151,7 @@
     if (!/^09[0-9]{9}$/.test(phone)) errors.phone = "شماره تماس باید ۱۱ رقم و با ۰۹ شروع شود.";
     if (!$("province_id").value) errors.province_id = "استان را انتخاب کنید.";
     if (!$("county_id").value) errors.county_id = "شهرستان را انتخاب کنید.";
-    if (!getDateStr()) errors.survey_date = "تاریخ را انتخاب کنید.";
-    var svcDate = window.S.toEnDigits($("service_date").value).trim();
-    if (svcDate && !/^[0-9]{4}\/[0-9]{1,2}\/[0-9]{1,2}$/.test(svcDate)) {
-      errors.service_date = "تاریخ دریافت خدمت را مانند ۱۴۰۵/۰۵/۱۰ وارد کنید یا خالی بگذارید.";
-    }
+    if (!getDateStr("j")) errors.survey_date = "تاریخ را انتخاب کنید.";
     var contact = document.querySelector('input[name="contact_option_id"]:checked');
     if (!contact) errors.contact_option_id = "وضعیت تماس را انتخاب کنید.";
     if (contact && contact.getAttribute("data-requires") === "1") {
@@ -174,11 +180,11 @@
       phone: window.S.toEnDigits($("phone").value).trim(),
       province_id: $("province_id").value || null,
       county_id: $("county_id").value || null,
-      survey_date: getDateStr(),
+      survey_date: getDateStr("j"),
       contact_option_id: (document.querySelector('input[name="contact_option_id"]:checked') || {}).value || null,
       counselor: $("counselor").value.trim(),
       service_type: $("service_type").value.trim(),
-      service_date: window.S.toEnDigits($("service_date").value).trim(),
+      service_date: getDateStr("s"),
       strengths: $("strengths").value.trim(),
       strengths_extra: $("strengths_extra").value.trim(),
       improvement: $("improvement").value.trim(),
@@ -196,7 +202,8 @@
     $("phone").value = rec.phone;
     $("counselor").value = rec.counselor || "";
     $("service_type").value = rec.service_type || "";
-    $("service_date").value = rec.service_date || "";
+    /* تاریخ دریافت خدمت اختیاری است؛ مقدار قدیمیِ غیرتاریخی در کادرها جا نمی‌شود و خالی می‌ماند */
+    setDateStr(rec.service_date || "", "s");
     $("strengths").value = rec.strengths || "";
     $("strengths_extra").value = rec.strengths_extra || "";
     $("improvement").value = rec.improvement || "";
@@ -244,6 +251,7 @@
     $("surveyForm").reset();
     $("county_id").innerHTML = '<option value="">ابتدا استان را انتخاب کنید…</option>';
     $("county_id").disabled = true;
+    clearDate("s");
     clearErrors();
     refreshRatingLock();
     recordId = null;
@@ -312,11 +320,14 @@
 
   /* ---------- شروع ---------- */
   document.addEventListener("DOMContentLoaded", async function () {
-    fillYearSelect();
-    fillMonthSelect();
-    fillDaySelect();
+    fillYearSelect("j");
+    fillMonthSelect("j");
+    fillDaySelect("j");
+    fillYearSelect("s", "سال…");
+    fillMonthSelect("s", "ماه…");
+    fillDaySelect("s", "روز…");
     var t = boot.todayJalali || "";
-    if (t) setDateStr(t);
+    if (t) setDateStr(t, "j");
 
     await loadProvinces();
 
@@ -325,9 +336,13 @@
       // با تغییر استان، شهرستان قبلیِ نامرتبط پاک می‌شود
     });
     ["jy", "jm"].forEach(function (id) {
-      $(id).addEventListener("change", fillDaySelect);
+      $(id).addEventListener("change", function () { fillDaySelect("j"); });
     });
-    $("todayBtn").addEventListener("click", function () { setDateStr(boot.todayJalali); });
+    ["sy", "sm"].forEach(function (id) {
+      $(id).addEventListener("change", function () { fillDaySelect("s", "روز…"); });
+    });
+    $("todayBtn").addEventListener("click", function () { setDateStr(boot.todayJalali, "j"); });
+    $("svcClearBtn").addEventListener("click", function () { clearDate("s"); });
 
     // اعتبارسنجی زنده کد ملی با الگوریتم اصلاح‌شده (بلافاصله پس از خروج از فیلد)
     $("national_code").addEventListener("change", function () {
