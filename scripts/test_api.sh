@@ -19,7 +19,7 @@ curl -s -b "$C" -X POST "$B/api/surveys" -H "Content-Type: application/json" -d 
   "province_id": 8, "county_id": 96,
   "survey_date": "۱۴۰۵/۰۸/۰۵",
   "contact_option_id": 1,
-  "answers": [{"question_id":1,"value":"خیلی زیاد"},{"question_id":2,"value":"زیاد"},{"question_id":3,"value":"متوسط"},{"question_id":4,"value":"خیلی زیاد"},{"question_id":5,"value":"زیاد"},{"question_id":6,"value":"خیلی زیاد"}]
+  "answers": [{"question_id":1,"value":"خیلی زیاد"},{"question_id":2,"value":"زیاد"},{"question_id":3,"value":"متوسط"},{"question_id":4,"value":"خیلی زیاد"},{"question_id":5,"value":"زیاد"},{"question_id":6,"value":"خیلی زیاد"},{"question_id":7,"value":"خیلی زیاد"},{"question_id":8,"value":"زیاد"}]
 }' | J "print('id:', d['id'], '| code:', d['record']['national_code'], '| date:', d['record']['survey_date_jalali'])"
 
 echo "== 2) کد ملی نامعتبر =="
