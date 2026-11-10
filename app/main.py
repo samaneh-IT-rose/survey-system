@@ -86,6 +86,17 @@ static_dir = BASE_DIR / "app" / "static"
 app.mount("/app/static", StaticFiles(directory=str(static_dir)), name="static")
 
 
+@app.get("/", include_in_schema=False)
+def root_redirect():
+    """آدرس کوتاه بدون پسوند — http://<IP>:8090/ — به صفحهٔ اصلی هدایت می‌شود.
+
+    قبلاً چنین مسیری وجود نداشت و کاربری که فقط نشانی سرور را می‌زد
+    (بدون /app/) خطای 404 می‌گرفت و به این نتیجه می‌رسید که «برنامه
+    جایی غیر از سرور اجرا نمی‌شود».
+    """
+    return RedirectResponse(url=APP_PREFIX + "/", status_code=307)
+
+
 @app.middleware("http")
 async def no_cache_html(request: Request, call_next):
     """صفحات HTML هرگز کش نشوند — مرورگر همیشه نسخهٔ تازه را می‌گیرد.
