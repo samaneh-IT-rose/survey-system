@@ -489,3 +489,33 @@ html[data-mode="dark"] .permchip.perm-export { background: #052e16; color: #86ef
 .datebox #sy { min-width: 84px; }
 .datebox #sm { min-width: 104px; }
 .datebox #sd { min-width: 70px; }
+
+/* ===== صفحه‌کلید مجازی فارسی ===== */
+.fakbd {
+  position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
+  z-index: 9999; width: max-content; max-width: 97vw;
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: 0 10px 34px rgba(15, 18, 30, .22);
+  padding: 8px 10px 10px; user-select: none; -webkit-tap-highlight-color: transparent;
+}
+.fakbd-head { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  font-size: 12.5px; color: var(--muted); margin: 0 2px 6px; }
+.fakbd-grid { display: flex; flex-direction: column; gap: 5px; }
+.fakbd-row { display: flex; gap: 4px; justify-content: center; flex-wrap: nowrap; }
+.fakbd-key {
+  min-width: 34px; height: 36px; padding: 0 7px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--bg); color: var(--text);
+  font-family: var(--font); font-size: 15px; line-height: 1; cursor: pointer;
+}
+.fakbd-key:hover { background: var(--soft); border-color: var(--primary); }
+.fakbd-key:active { background: var(--primary); color: var(--on-primary); }
+.fakbd-key.fakbd-wide { font-size: 12.5px; min-width: 74px; }
+.fakbd-key.fakbd-space { min-width: 168px; }
+.fakbd-key.fakbd-close { min-width: 30px; height: 26px; font-size: 13px; }
+[data-fakbd].fakbd-on { outline: 2px solid var(--primary); outline-offset: 1px; }
+@media (max-width: 560px) {
+  .fakbd-key { min-width: 27px; height: 32px; font-size: 13.5px; padding: 0 4px; }
+  .fakbd-key.fakbd-space { min-width: 120px; }
+  .fakbd-key.fakbd-wide { min-width: 60px; font-size: 11.5px; }
+}

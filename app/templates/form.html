@@ -179,6 +179,10 @@
       <button type="button" class="btn danger" id="clearBtn">
         <span class="icn">🧹</span> پاک‌کردن / فرم جدید
       </button>
+      <button type="button" class="btn" id="faKbdBtn" data-fakbd aria-pressed="false"
+              title="اگر کیبورد رایانه فارسی نیست، حروف را با ماوس کلیک کنید">
+        <span class="icn">⌨</span> صفحه‌کلید فارسی
+      </button>
       <span class="muted" id="saveState" aria-live="polite"></span>
     </div>
   </section>
@@ -196,4 +200,5 @@ window.__BOOT__ = {
 };
 </script>
 <script src="{{ asset('static/js/form.js') }}"></script>
+<script src="{{ asset('static/js/fa-keyboard.js') }}"></script>
 {% endblock %}
