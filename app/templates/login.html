@@ -9,36 +9,48 @@
 </head>
 <body class="loginbody">
   <div class="loginwrap">
-    <div class="logincard">
-      <img class="loginlogo" src="{{ logo_url }}" alt="لوگو"
-           style="width:76px;height:100px;object-fit:contain;border-radius:12px">
-      <p class="loginsub">{{ app_title }}</p>
+    <!-- قاب تصویری — تصویر با نسبت اصلی 1066/1475 نمایش داده می‌شود (بدون برش و بدون کشیدگی)
+         و نام کاربری، رمز عبور و دکمهٔ ورود داخل کادر تصویر قرار می‌گیرند -->
+    <div class="loginframe">
+      <div class="lf-inner">
+        <div class="lf-brand">
+          <img src="{{ logo_url }}" alt="لوگو">
+          <div class="lf-brandname">
+            <div class="lf-org">{{ org_name }}</div>
+            <div class="lf-app">{{ app_title }}</div>
+          </div>
+        </div>
 
-      {% if error %}
-      <div class="loginerror" role="alert">{{ error }}</div>
-      {% endif %}
+        {% if created %}
+        <div class="lf-msg ok">ثبت‌نام انجام شد؛ برای ورود، نام کاربری و رمز عبور خود را وارد کنید.</div>
+        {% endif %}
+        {% if error %}
+        <div class="lf-msg err" role="alert">{{ error }}</div>
+        {% endif %}
 
-      <form method="post" action="{{ prefix }}/login" class="loginform">
-        <label class="field">
-          <span>نام کاربری</span>
-          <input type="text" name="username" value="{{ username or '' }}" required autofocus
-                 autocomplete="username" dir="ltr" placeholder="admin">
-        </label>
-        <label class="field">
-          <span>رمز عبور</span>
-          <span class="passwrap">
-            <input type="password" name="password" required
-                   autocomplete="current-password" dir="ltr" placeholder="••••••••">
-            <button type="button" class="eyebtn" aria-label="نمایش رمز" aria-pressed="false" title="نمایش رمز">
-              <svg class="ic-eye" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
-              <svg class="ic-eyeoff" hidden viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-            </button>
-          </span>
-        </label>
-        <button type="submit" class="btn primary loginbtn">ورود به سامانه</button>
-      </form>
+        <form method="post" action="{{ prefix }}/login" class="lf-fields">
+          <label>
+            <span class="flabel">نام کاربری</span>
+            <input type="text" name="username" value="{{ username or '' }}" required autofocus
+                   autocomplete="username" dir="ltr" placeholder="admin">
+          </label>
+          <label>
+            <span class="flabel">رمز عبور</span>
+            <span class="passwrap">
+              <input type="password" name="password" required
+                     autocomplete="current-password" dir="ltr" placeholder="••••••••">
+              <button type="button" class="eyebtn" aria-label="نمایش رمز" aria-pressed="false" title="نمایش رمز">
+                <svg class="ic-eye" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="ic-eyeoff" hidden viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
+            </span>
+          </label>
+          <button type="submit" class="btn primary lf-submit">ورود به سامانه</button>
+        </form>
 
-      <p class="loginfoot">سامانه فرم نظرسنجی تلفنی — <bdi>{{ today }}</bdi> — نسخهٔ <bdi>{{ app_version }}</bdi></p>
+        <a class="lf-link" href="{{ prefix }}/signup">کاربر جدید هستید؟ ثبت‌نام کنید</a>
+      </div>
+      <p class="lf-foot">نسخهٔ <bdi>{{ app_version }}</bdi> — <bdi>{{ today }}</bdi></p>
     </div>
   </div>
 <script src="{{ asset('static/js/password-toggle.js') }}"></script>
