@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
-"""صفحات احراز هویت: ورود، خروج و تغییر رمز عبور — همه زیر /app."""
+"""صفحات احراز هویت: ورود، ثبت‌نام، خروج و تغییر رمز عبور — همه زیر /app."""
 from __future__ import annotations
+
+import re
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse
@@ -9,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from ..auth import PageRedirect
 from ..config import APP_PREFIX, APP_TITLE, APP_VERSION, BASE_DIR, ORG_NAME
+from ..constants import LEVEL_USER, ROLE_VIEWER
 from ..database import get_db
 from ..models import User
 from ..utils.activity import log_activity
@@ -68,7 +71,7 @@ def login_page(request: Request, db: Session = Depends(get_db)):
         if user.must_change_password:
             return RedirectResponse(f"{APP_PREFIX}/change-password", status_code=303)
         return RedirectResponse(f"{APP_PREFIX}/", status_code=303)
-    return templates.TemplateResponse(request, "login.html", _auth_ctx(page_title="ورود"))
+    return templates.TemplateResponse(request, "login.html", _auth_ctx(page_title="ورود", created=request.query_params.get("created") == "1"))
 
 
 @router.post("/login")
@@ -104,6 +107,79 @@ async def login_do(request: Request, db: Session = Depends(get_db)):
     response = RedirectResponse(target, status_code=303)
     _set_session_cookie(response, user)
     return response
+
+
+@router.get("/signup")
+def signup_page(request: Request, db: Session = Depends(get_db)):
+    """صفحهٔ ثبت‌نام خودکار کاربر جدید — بدون نیاز به مدیر.
+
+    کاربرِ ساخته‌شده نقش پیش‌فرض «مشاهده‌گر» (فقط خواندنی) می‌گیرد؛
+    مدیر سامانه بعداً از صفحهٔ «کاربران» می‌تواند نقش و دسترسی‌ها را تغییر دهد.
+    """
+    user = _load_user(request, db)
+    if user is not None and user.is_active:
+        return RedirectResponse(f"{APP_PREFIX}/", status_code=303)
+    return templates.TemplateResponse(
+        request,
+        "signup.html",
+        _auth_ctx(page_title="ثبت‌نام", error=None, form={}),
+    )
+
+
+@router.post("/signup")
+async def signup_do(request: Request, db: Session = Depends(get_db)):
+    """ساخت حساب با نام کاربری شخصی — با اعتبارسنجی کامل سمت سرور."""
+    user = _load_user(request, db)
+    if user is not None and user.is_active:
+        return RedirectResponse(f"{APP_PREFIX}/", status_code=303)
+
+    form = await request.form()
+    full_name = str(form.get("full_name") or "").strip()
+    username = str(form.get("username") or "").strip().lower()
+    p1 = str(form.get("password") or "")
+    p2 = str(form.get("password2") or "")
+
+    error = None
+    if len(full_name) < 2 or len(full_name) > 120:
+        error = "نام و نام خانوادگی را وارد کنید (حداقل ۲ نویسه)."
+    elif not re.fullmatch(r"[a-z0-9._-]{3,30}", username):
+        error = "نام کاربری باید ۳ تا ۳۰ نویسه و فقط حروف انگلیسی، عدد، نقطه، خط تیره یا زیرخط باشد."
+    elif len(p1) < MIN_PASSWORD_LEN:
+        error = f"رمز عبور باید حداقل {MIN_PASSWORD_LEN} نویسه باشد."
+    elif p1 != p2:
+        error = "تکرار رمز عبور با رمز عبور یکسان نیست."
+    else:
+        exists = db.scalars(select(User).where(User.username == username)).first()
+        if exists is not None:
+            error = "این نام کاربری قبلاً ثبت شده است؛ نام دیگری انتخاب کنید."
+
+    if error:
+        log_activity(db, request, None, "signup_failed", f"خطا: {error} — نام کاربری: {username}", username_override=username)
+        return templates.TemplateResponse(
+            request,
+            "signup.html",
+            _auth_ctx(page_title="ثبت‌نام", error=error, form={"full_name": full_name, "username": username}),
+            status_code=422,
+        )
+
+    new_user = User(
+        username=username,
+        password_hash=hash_password(p1),
+        full_name=full_name,
+        role=ROLE_VIEWER,
+        level=LEVEL_USER,
+        is_active=True,
+        must_change_password=False,
+    )
+    db.add(new_user)
+    db.commit()
+    log_activity(
+        db, request, None, "user_signup",
+        f"ثبت‌نام خودکار کاربر «{full_name}» — نقش پیش‌فرض: مشاهده‌گر",
+        username_override=username,
+    )
+
+    return RedirectResponse(f"{APP_PREFIX}/login?created=1", status_code=303)
 
 
 @router.get("/logout")
