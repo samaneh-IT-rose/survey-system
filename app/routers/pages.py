@@ -10,6 +10,7 @@ from ..auth import page_admin, page_require_perm
 from ..config import APP_PREFIX, APP_TITLE, BASE_DIR, LOGO_URL, ORG_NAME
 from ..constants import PERM_EDIT, PERM_PRINT, PERM_VIEW
 from ..database import get_db
+from ..forms_registry import enabled_forms
 from ..models import Survey, User
 from ..utils.jalali import gregorian_to_jalali, is_jalali_leap, today_jalali_str
 
@@ -52,6 +53,7 @@ def _ctx(user: User | None = None, **extra):
         "prefix": APP_PREFIX,
         "asset": _asset_url,
         "user": user,
+        "forms": enabled_forms(),  # منوی «فرم‌های نظرسنجی» — از forms_registry
     }
     ctx.update(extra)
     return ctx

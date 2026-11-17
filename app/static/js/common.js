@@ -77,11 +77,36 @@
     return window.confirm(msg);
   };
 
-  // هایلایت لینک فعال ناوبری
+  // هایلایت لینک فعال ناوبری — شامل دکمهٔ منوی بازشو فرم‌ها
+  // data-page روی یک عنصر داخل قالب است (مثل <div data-page="form">)، نه روی body
   document.addEventListener("DOMContentLoaded", function () {
-    var page = document.body.getAttribute("data-page") || "";
-    document.querySelectorAll(".mainnav a").forEach(function (a) {
-      if (a.getAttribute("data-nav") === page) a.classList.add("active");
+    var holder = document.querySelector("[data-page]");
+    var page = holder ? holder.getAttribute("data-page") : "";
+    if (!page) return;
+    document.querySelectorAll(".mainnav [data-nav]").forEach(function (el) {
+      if (el.getAttribute("data-nav") === page) el.classList.add("active");
+    });
+  });
+
+  // منوی بازشو «فرم‌های نظرسنجی» — با کلیک باز/بسته می‌شود؛
+  // با کلیک بیرون منو یا کلید Escape بسته می‌شود (روی لمسی کار می‌کند، روی دسکتاپ هم شناور با ماوس باز می‌شود)
+  document.addEventListener("DOMContentLoaded", function () {
+    var drop = document.getElementById("navFormsDrop");
+    if (!drop) return;
+    var btn = drop.querySelector(".navdrop-btn");
+    function setOpen(open) {
+      drop.classList.toggle("open", open);
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+    btn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      setOpen(!drop.classList.contains("open"));
+    });
+    document.addEventListener("click", function (e) {
+      if (!drop.contains(e.target)) setOpen(false);
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") setOpen(false);
     });
   });
 })();

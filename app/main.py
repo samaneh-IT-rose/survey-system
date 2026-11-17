@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""نقطه ورود FastAPI — سامانه فرم نظرسنجی تلفنی."""
+"""نقطه ورود FastAPI — سامانه نظرسنجی‌ها."""
 import logging
 import traceback
 from contextlib import asynccontextmanager

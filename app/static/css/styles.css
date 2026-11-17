@@ -116,6 +116,35 @@ bdi, .ltr { direction: ltr; unicode-bidi: isolate; }
 .mainnav a:hover { color: var(--primary); background: var(--soft); }
 .mainnav a.active { color: var(--on-primary); background: var(--primary); }
 
+/* ---------- منوی بازشو «فرم‌های نظرسنجی» ---------- */
+.navdrop { position: relative; }
+.navdrop-btn {
+  border: none; background: transparent; cursor: pointer; font: inherit;
+  color: var(--muted); font-weight: 500; font-size: 13.5px;
+  padding: 7px 13px; border-radius: 999px; transition: all .15s ease;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.navdrop-btn:hover { color: var(--primary); background: var(--soft); }
+.navdrop-btn.active { color: var(--on-primary); background: var(--primary); }
+.navdrop-caret { font-size: 10px; line-height: 1; transition: transform .15s ease; }
+.navdrop.open .navdrop-caret { transform: rotate(180deg); }
+.navdrop-menu {
+  position: absolute; top: calc(100% + 6px); inset-inline-start: 0;
+  min-width: 260px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: 0 10px 28px rgba(15, 18, 30, .14);
+  padding: 6px; display: none; z-index: 60;
+}
+.navdrop.open .navdrop-menu { display: block; }
+@media (hover: hover) {
+  .navdrop:hover .navdrop-menu { display: block; }
+}
+.navdrop-menu a {
+  display: block; padding: 9px 12px; border-radius: var(--radius-sm);
+  font-size: 13.5px; font-weight: 500; color: var(--text);
+  text-decoration: none; white-space: nowrap;
+}
+.navdrop-menu a:hover { background: var(--soft); color: var(--primary); }
+
 .themectrl { margin-inline-start: auto; display: flex; align-items: center; gap: 8px; }
 .swatches { display: flex; gap: 6px; }
 .swatch {

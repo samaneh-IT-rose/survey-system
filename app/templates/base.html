@@ -16,7 +16,16 @@
       </a>
       <nav class="mainnav" aria-label="ناوبری اصلی">
         {% if user and user.has_perm('edit') %}
-        <a href="{{ prefix }}/" data-nav="form">فرم نظرسنجی</a>
+        <div class="navdrop" id="navFormsDrop">
+          <button type="button" class="navdrop-btn" data-nav="form" aria-haspopup="true" aria-expanded="false">
+            فرم‌های نظرسنجی<span class="navdrop-caret" aria-hidden="true">▾</span>
+          </button>
+          <div class="navdrop-menu">
+            {% for f in forms %}
+            <a href="{{ prefix }}{{ f.url }}" title="{{ f.title }}">{{ f.title }}</a>
+            {% endfor %}
+          </div>
+        </div>
         {% endif %}
         {% if user and user.has_perm('view') %}
         <a href="{{ prefix }}/records" data-nav="records">آرشیو فرم‌ها</a>
