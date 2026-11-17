@@ -5,17 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ form_title }}</title>
     <style>
-        /* ===== عین فایل نمونه: Tel Surveys-form-offline-final.html =====
-           تنها دو تفاوت (بدون هیچ تغییر ظاهری):
-           ۱) فونت‌ها به‌جای CDN از داخل پروژه بار می‌شوند تا بدون اینترنت هم همان زر/تیتر دیده شود
-           ۲) مقادیر فیلدها از سامانه داخل ورودی‌ها می‌نشیند و تیک‌ها checked می‌شوند */
+        /* ===== عین فایل نمونه: Individual Surveys-form-final.html =====
+           تنها سه تفاوت (بدون هیچ تغییر ظاهری دیگر):
+           ۱) فونت‌ها به‌جای CDN از داخل پروژه بار می‌شوند تا بدون اینترنت هم همین زر/تیتر دیده شود
+           ۲) مقادیر فیلدها از سامانه داخل ورودی‌ها می‌نشیند و تیک‌ها checked می‌شوند
+           ۳) ورودی تاریخ سربرگ بدون کادر است — فقط خط نقطه‌چین (خواست سفارش‌دهنده) */
 
-        :root {
-            --primary-color: #f04e5e; /* رنگ قرمز لوگو */
-            --bg-color: #f4f6f8;
-            --border-color: #333;
-        }
 
+        /* انطباق ۱: فونت‌ها از داخل پروژه بار می‌شوند تا بدون اینترنت هم همین ظاهر دیده شود */
         @font-face {
             font-family: "B Zar";
             src: url("/app/static/fonts/BZar.ttf") format("truetype");
@@ -42,12 +39,86 @@
             font-weight: 700;
         }
 
+
+        :root {
+            --primary-color: #f04e5e; /* رنگ قرمز لوگو */
+            --bg-color: #f4f6f8;
+            --border-color: #333;
+        }
+
         body {
             font-family: 'B Zar', 'B Nazanin', 'Vazirmatn', sans-serif;
             background-color: var(--bg-color);
             margin: 0;
             padding: 20px;
             color: #222;
+        }
+
+        .dashboard {
+            max-width: 950px;
+            margin: 0 auto 20px auto;
+            background: #fff;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .dashboard h2 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: var(--primary-color);
+        }
+
+        .dashboard-buttons {
+            display: flex;
+            gap: 6px;
+            flex-wrap: nowrap;
+        }
+
+        .dashboard-buttons button, 
+        .dashboard-buttons label {
+            padding: 6px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.78rem;
+            font-weight: bold;
+            transition: 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+
+        .btn-save { background-color: #27ae60; color: white; }
+        .btn-save:hover { background-color: #2ecc71; }
+        
+        .btn-print { background-color: #2980b9; color: white; }
+        .btn-print:hover { background-color: #3498db; }
+        
+        .btn-reset { background-color: #e74c3c; color: white; }
+        .btn-reset:hover { background-color: #c0392b; }
+
+        .btn-export { background-color: #8e44ad; color: white; }
+        .btn-export:hover { background-color: #9b59b6; }
+
+        .btn-import { background-color: #d35400; color: white; }
+        .btn-import:hover { background-color: #e67e22; }
+
+        .btn-edit-mode { background-color: #7f8c8d; color: white; }
+        .btn-edit-mode.active { background-color: #f39c12; color: white; }
+
+        .status {
+            font-size: 0.9rem;
+            color: #666;
+            width: 100%;
+            margin-top: 5px;
         }
 
         .form-container {
@@ -74,12 +145,12 @@
 
         .header-table .logo-cell {
             text-align: center;
-            width: 100px;
+            width: 120px;
         }
 
         .header-table .logo-cell img {
-            max-width: 80px;
-            max-height: 80px;
+            max-width: 100px;
+            max-height: 100px;
             object-fit: contain;
         }
 
@@ -98,14 +169,14 @@
         .info-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
+            gap: 10px 15px;
             margin-bottom: 20px;
         }
 
         .info-row {
             display: flex;
-            align-items: baseline;
-            gap: 4px;
+            align-items: center;
+            gap: 10px;
         }
 
         .info-row label {
@@ -117,7 +188,7 @@
         .info-row input[type="text"],
         .info-row input[type="date"] {
             flex-grow: 1;
-            padding: 0 8px;
+            padding: 6px 10px;
             border: none;
             border-bottom: 1px dotted #333;
             background: transparent;
@@ -125,6 +196,12 @@
             font-size: 0.95rem;
             outline: none;
             min-width: 50px;
+        }
+
+        .info-row input[type="text"]:focus,
+        .info-row input[type="date"]:focus {
+            border-bottom: 1px solid var(--primary-color);
+            background-color: #f9f9f9;
         }
 
         .checkbox-group {
@@ -133,7 +210,7 @@
             gap: 15px;
             margin-bottom: 20px;
             flex-wrap: wrap;
-            font-size: 1.05rem;
+            font-size: 0.95rem;
         }
 
         .checkbox-group label {
@@ -141,36 +218,6 @@
             align-items: center;
             gap: 5px;
             cursor: pointer;
-        }
-
-        /* خطوط نقطه‌چین نقاط قوت و پیشنهاد بهبود */
-        .open-lines {
-            margin-bottom: 5px;
-        }
-
-        .open-line {
-            display: flex;
-            align-items: baseline;
-            gap: 4px;
-            margin-bottom: 16px;
-        }
-
-        .open-line label {
-            white-space: nowrap;
-            font-weight: bold;
-            font-size: 0.95rem;
-        }
-
-        .open-line input {
-            flex-grow: 1;
-            padding: 0 8px;
-            border: none;
-            border-bottom: 1px dotted #333;
-            background: transparent;
-            font-family: inherit;
-            font-size: 0.95rem;
-            outline: none;
-            min-width: 50px;
         }
 
         table.evaluation-table {
@@ -193,10 +240,24 @@
         }
 
         table.evaluation-table td.question-cell {
-            text-align: right;
-            font-weight: 400;
-            font-size: 1.05rem;
-            width: 40%;
+            text-align: justify;
+            text-justify: inter-word;
+            text-align-last: right;
+            font-weight: 500;
+            font-size: 1rem;
+            width: 45%;
+            line-height: 1.7;
+            /* اطمینان از هم‌تراز شدن تمام سوالات */
+            direction: rtl;
+            vertical-align: middle;
+        }
+
+        /* استایل برای حالت ویرایش سوالات */
+        .edit-mode-active .question-cell {
+            background-color: #fff3cd;
+            border: 2px dashed #ffc107 !important;
+            cursor: text;
+            outline: none;
         }
 
         table.evaluation-table input[type="radio"] {
@@ -205,7 +266,7 @@
             height: 18px;
         }
 
-        /* تیک پرشده سیاه چاپ شود — مثل فرم کاغذی (رنگ پیش‌فرض آبی کروم نباشد) */
+        /* تیک پرشده سیاه چاپ شود — مثل فرم کاغذی (انطباق اجرایی، رنگ پیش‌فرض آبی کروم نباشد) */
         input[type="radio"] { accent-color: #000; }
 
         .footer-grid {
@@ -240,13 +301,7 @@
             background: transparent;
         }
 
-        #supervisorName {
-            margin-top: auto;
-            margin-bottom: auto;
-            transform: translateY(-50%);
-        }
-
-        /* ورودی تاریخ سربرگ: بدون کادر — فقط خط نقطه‌چین مثل بقیهٔ فیلدهای فرم */
+        /* انطباق ۳: ورودی تاریخ سربرگ بدون کادر — فقط خط نقطه‌چین (خواست سفارش‌دهنده) */
         #formDate {
             border: none;
             border-bottom: 1px dotted #333;
@@ -256,6 +311,12 @@
             padding: 0 4px;
             text-align: center;
             color: #222;
+        }
+
+        #supervisorName {
+            margin-top: auto;
+            margin-bottom: auto;
+            transform: translateY(-50%);
         }
 
         /* دکمهٔ چاپ — فقط در نمای مرورگر؛ در چاپ حذف می‌شود */
@@ -271,6 +332,8 @@
         @media (max-width: 768px) {
             .info-grid { grid-template-columns: 1fr; }
             .footer-grid { grid-template-columns: 1fr; }
+            .dashboard { flex-direction: column; align-items: stretch; text-align: center; }
+            .dashboard-buttons { justify-content: center; }
             .header-table { display: flex; flex-direction: column; }
             .header-table td { border: none; border-bottom: 1px solid #ccc; text-align: center; }
             .header-table td.meta-cell { text-align: right; }
@@ -291,6 +354,7 @@
                 print-color-adjust: exact;
             }
 
+            .dashboard { display: none !important; }
             .printbar { display: none !important; }
 
             .form-container {
@@ -304,71 +368,34 @@
             .header-table { margin-bottom: 8pt; }
             .header-table td { padding: 6pt 8pt; }
             .title-cell { font-size: 12pt; }
-            .meta-cell { font-size: 10.5pt; }
+            .meta-cell { font-size: 9.5pt; }
             .header-table .logo-cell { width: 90pt; }
             .header-table .logo-cell img { max-width: 60pt; max-height: 60pt; }
 
-            /* تضمین نمای چاپ دقیقاً مطابق HTML (خنثی‌سازی media query موبایل در چاپ):
-               کادر کامل هدر، اطلاعات دو ستونه و دو کادر پایین همیشه کنار هم در یک صفحه */
-            .header-table {
-                display: table !important;
-                width: 100% !important;
-            }
-            .header-table td {
-                border: 1px solid var(--border-color) !important;
-                text-align: right;
-            }
-            .header-table td.title-cell,
-            .header-table td.logo-cell {
-                text-align: center;
-            }
-            .info-grid {
-                display: grid !important;
-                grid-template-columns: 1fr 1fr !important;
-            }
-            .footer-grid {
-                display: grid !important;
-                grid-template-columns: 1fr 1fr !important;
-            }
-
             .info-grid {
                 grid-template-columns: 1fr 1fr;
-                gap: 5pt 14pt;
+                gap: 4pt 14pt;
                 margin-bottom: 8pt;
             }
-            .info-row { gap: 3pt; }
-            .info-row label { font-size: 10.5pt; }
+            .info-row label { font-size: 9.5pt; }
             .info-row input[type="text"],
             .info-row input[type="date"] {
-                font-size: 10.5pt;
-                padding: 0 4pt;
+                font-size: 9.5pt;
+                padding: 2pt 4pt;
             }
 
             .checkbox-group {
                 margin-bottom: 8pt;
-                font-size: 12pt;
+                font-size: 9.5pt;
                 gap: 10pt;
-            }
-
-            .open-lines { margin-bottom: 4pt; }
-            .open-line { gap: 3pt; margin-bottom: 11pt; }
-            .open-line label { font-size: 10.5pt; }
-            .open-line input {
-                font-size: 10.5pt;
-                padding: 0 4pt;
-                border-bottom: 1px dotted #000 !important;
             }
 
             table.evaluation-table { margin-bottom: 8pt; }
             table.evaluation-table th,
             table.evaluation-table td {
-                padding: 4pt 6pt;
-                font-size: 10.5pt;
-                line-height: 1.35;
-            }
-            table.evaluation-table td.question-cell {
-                font-size: 12pt;
-                font-weight: 400;
+                padding: 5pt 6pt;
+                font-size: 9.5pt;
+                line-height: 1.4;
             }
             table.evaluation-table th {
                 background-color: #f0f0f0 !important;
@@ -392,16 +419,54 @@
             .footer-box input { font-size: 10.5pt; padding: 2pt; }
             #supervisorName { margin-top: auto; margin-bottom: auto; transform: translateY(-50%); }
 
+            input[type="text"], input[type="date"] {
+                border-bottom: 1px solid #000 !important;
+            }
+            #supervisorSignature { border-bottom: none !important; }
+
             /* تاریخ سربرگ در چاپ هم بدون کادر — فقط خط نقطه‌چین */
             #formDate {
                 border: none !important;
                 border-bottom: 1px dotted #000 !important;
             }
-
-            input[type="text"]:not(.dotted-input), input[type="date"] {
-                border-bottom: 1px solid #000 !important;
+            .edit-mode-active .question-cell {
+                background-color: transparent;
+                border: none !important;
             }
-            #supervisorSignature { border-bottom: none !important; }
+
+            /* تضمین چیدمان چاپ مطابق طراحی اصلی فرم (خنثی‌سازی media query موبایل در چاپ):
+               هدر جدولی، اطلاعات دو ستونه و دو کادر پایین همیشه کنار هم در یک صفحه */
+            .header-table {
+                display: table !important;
+                width: 100% !important;
+            }
+            .header-table td {
+                border: 1px solid #000 !important;
+                text-align: right;
+            }
+            .header-table td.title-cell,
+            .header-table td.logo-cell {
+                text-align: center;
+            }
+            .info-grid {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr !important;
+            }
+            .footer-grid {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr !important;
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            .footer-box {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            /* اجرای line-height 1.4 که طراح در بخش چاپ نوشته بود ولی به دلیل تقدم سلکتورها اعمال نمی‌شد */
+            table.evaluation-table td.question-cell {
+                font-size: 10pt;
+                line-height: 1.4;
+            }
         }
     </style>
 </head>
@@ -415,12 +480,13 @@
     </div>
     {% endif %}
 
-    <!-- بدنه فرم — عین فایل نمونه -->
+<!-- بدنه فرم -->
     <div class="form-container" id="surveyForm">
         <!-- هدر فرم -->
         <table class="header-table">
             <tr>
                 <td class="logo-cell">
+                    <!-- لوگوی شرکت - بدون هیچ تغییری -->
                     <img src="/app/static/logo/logo.png" alt="لوگوی شرکت">
                 </td>
                 <td class="title-cell">
@@ -445,7 +511,7 @@
             </div>
             <div class="info-row">
                 <label>شماره تماس مراجع:</label>
-                <input type="text" id="clientPhone" value="{{ record.phone }}" readonly>
+                <input type="text" id="phone" value="{{ record.phone }}" readonly>
             </div>
             <div class="info-row">
                 <label>مشاور:</label>
@@ -472,7 +538,7 @@
         <!-- وضعیت تماس -->
         <div class="checkbox-group">
             <strong>وضعیت تماس:</strong>
-            {% for c in contact_options %}
+                        {% for c in contact_options %}
             <label><input type="radio" name="contactStatus" value="{{ c.text }}"{% if record.contact_option and (record.contact_option.id == c.id or record.contact_option.text == c.text) %} checked{% endif %}> {{ c.text }}</label>
             {% endfor %}
         </div>
@@ -481,12 +547,12 @@
         <table class="evaluation-table">
             <thead>
                 <tr>
-                    <th style="width: 40%;">سوال</th>
-                    <th>خیلی زیاد</th>
-                    <th>زیاد</th>
-                    <th>متوسط</th>
-                    <th>کم</th>
-                    <th>خیلی کم</th>
+                    <th style="width: 45%;">سوال</th>
+                    <th style="width: 11%;">خیلی زیاد</th>
+                    <th style="width: 11%;">زیاد</th>
+                    <th style="width: 11%;">متوسط</th>
+                    <th style="width: 11%;">کم</th>
+                    <th style="width: 11%;">خیلی کم</th>
                 </tr>
             </thead>
             <tbody>
@@ -505,24 +571,6 @@
             </tbody>
         </table>
 
-        <!-- نقاط قوت و پیشنهاد بهبود مشاوره تلفنی -->
-        <div class="open-lines">
-            <div class="open-line">
-                <label>نقاط قوت مشاوره تلفنی:</label>
-                <input type="text" class="dotted-input" value="{{ record.strengths }}" readonly>
-            </div>
-            <div class="open-line">
-                <input type="text" class="dotted-input" value="{{ record.strengths_extra }}" readonly>
-            </div>
-            <div class="open-line">
-                <label>پیشنهاد بهبود:</label>
-                <input type="text" class="dotted-input" value="{{ record.improvement }}" readonly>
-            </div>
-            <div class="open-line">
-                <input type="text" class="dotted-input" value="{{ record.improvement_extra }}" readonly>
-            </div>
-        </div>
-
         <!-- فوتر امضاها -->
         <div class="footer-grid">
             <div class="footer-box" style="justify-content: flex-start;">
@@ -535,6 +583,5 @@
             </div>
         </div>
     </div>
-
 </body>
 </html>

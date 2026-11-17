@@ -33,16 +33,34 @@ def build_sheet_context(db: Session, survey: Survey, *, interactive: bool) -> di
         .order_by(ContactOption.display_order, ContactOption.id)
     ).all()
 
-    return {
-        "record": record,
-        "questions": [
+    # رکوردهای قدیمی پس از گذار الگو (مثلاً رکورد نسخهٔ تلفنی در سامانهٔ فرم فردی):
+    # اگر متن سؤال‌های پاسخ‌داده‌شدهٔ رکورد در الگوی فعلی نیست، همان سؤال‌های
+    # نسخهٔ خودِ رکورد (snapshot هنگام ثبت) رندر می‌شود تا چاپِ رکورد قدیمی
+    # هم دقیقاً با تیک‌های واقعی‌اش دیده شود؛ رکوردهای جدید با الگوی فعال چاپ می‌شوند.
+    answered_texts = {a["question_text"].strip() for a in record["answers"] if a.get("question_text")}
+    active_texts = {q.text.strip() for q in active_questions}
+    if record["answers"] and answered_texts and not answered_texts.issubset(active_texts):
+        snapshot_questions: list[dict] = []
+        seen: set[str] = set()
+        for a in record["answers"]:
+            t = (a.get("question_text") or "").strip()
+            if t and t not in seen:
+                seen.add(t)
+                snapshot_questions.append({"id": a["question_id"], "text": t, "value": a["value"]})
+        sheet_questions = snapshot_questions
+    else:
+        sheet_questions = [
             {
                 "id": q.id,
                 "text": q.text,
                 "value": answers_by_qid.get(q.id) or answers_by_text.get(q.text.strip()),
             }
             for q in active_questions
-        ],
+        ]
+
+    return {
+        "record": record,
+        "questions": sheet_questions,
         "contact_options": [{"id": c.id, "text": c.text} for c in contacts],
         "interactive": interactive,
         "org_name": ORG_NAME,
