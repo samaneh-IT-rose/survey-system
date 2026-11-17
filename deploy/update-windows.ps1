@@ -153,6 +153,22 @@ Copy-Item "$src\requirements.txt" "$APPDIR\requirements.txt" -Force
 if (Test-Path "$src\README.md") { Copy-Item "$src\README.md" "$APPDIR\README.md" -Force }
 Remove-Item $ex -Recurse -Force
 
+# ---------- 4b) همگام‌سازی الگوی فرم (سؤال‌ها و وضعیت‌های تماس جدید) ----------
+# متن‌های الگو در دیتابیس سرور زندگی می‌کنند؛ این گام همان scripts/update_template.py
+# را روی دیتابیس موجود اجرا می‌کند (سؤال‌های قدیمی حذف نمی‌شوند، فقط غیرفعال می‌شوند
+# و پاسخ‌های رکوردهای قبلی سالم می‌مانند)
+Write-Host ">> [4b] Syncing the form template (new questions & contact statuses)..."
+$py = "$APPDIR\venv\Scripts\python.exe"
+if (Test-Path $py) {
+    & $py "$APPDIR\scripts\update_template.py"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "   WARNING: template sync had an error - the app still runs." -ForegroundColor Yellow
+        Write-Host "   Run manually:  cd C:\survey-system ; venv\Scripts\python scripts\update_template.py" -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "   venv python not found - skipping template sync." -ForegroundColor Yellow
+}
+
 # ---------- 5) restart + REAL version check ----------
 Write-Host ">> [5/5] Restarting the service..."
 cmd /c 'schtasks /Run /TN "SurveySystem" >nul 2>&1'

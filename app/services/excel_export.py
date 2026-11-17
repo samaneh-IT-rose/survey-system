@@ -72,10 +72,10 @@ def build_excel(db: Session, filters: dict) -> tuple[bytes, str]:
     ws.sheet_view.rightToLeft = True
 
     headers = [
-        "ردیف", "نام", "نام خانوادگی", "کد ملی", "شماره تماس",
+        "ردیف", "نام", "نام خانوادگی", "کد ملی", "شماره تماس مراجع",
         "استان", "شهرستان", "تاریخ نظرسنجی (شمسی)", "وضعیت تماس",
-        "مشاور", "نوع خدمت", "تاریخ دریافت خدمت (شمسی)",
-        "نقاط قوت مشاوره تلفنی", "پیشنهاد بهبود", "کارشناس نظارت حرفه‌ای",
+        "مشاور", "نوع خدمت", "تاریخ دریافت خدمت",
+        "نقاط قوت", "پیشنهاد بهبود", "کارشناس نظارت حرفه‌ای",
     ] + [f"سؤال {i + 1}: {q.text}" for i, q in enumerate(questions)] + [
         "زمان ثبت (شمسی)",
     ]
@@ -98,7 +98,10 @@ def build_excel(db: Session, filters: dict) -> tuple[bytes, str]:
 
     # داده‌ها
     for i, s in enumerate(rows, start=1):
-        answers = {a.question_id: a.value_label for a in s.answers}
+        # تطبیق پاسخ‌ها: اول با شناسهٔ سؤال، و اگر رکورد قدیمی الگو عوض شده بود
+        # با متن سؤالِ ذخیره‌شده (snapshot) — همان منطق نمای چاپ
+        answers_by_id = {a.question_id: a.value_label for a in s.answers}
+        answers_by_text = {a.question_text.strip(): a.value_label for a in s.answers if a.question_text}
         contact_text = s.contact_option.text if s.contact_option else "—"
         strengths = " ".join(x for x in [s.strengths or "", s.strengths_extra or ""] if x)
         improvement = " ".join(x for x in [s.improvement or "", s.improvement_extra or ""] if x)
@@ -107,7 +110,7 @@ def build_excel(db: Session, filters: dict) -> tuple[bytes, str]:
             s.province.name, s.county.name, gdate_to_jalali_str(s.survey_date), contact_text,
             s.counselor or "", s.service_type or "", s.service_date or "",
             strengths, improvement, s.supervisor_name or "",
-        ] + [answers.get(q.id, "") for q in questions] + [
+        ] + [answers_by_id.get(q.id) or answers_by_text.get(q.text.strip(), "") for q in questions] + [
             gdate_to_jalali_str(s.created_at.date()) if s.created_at else "",
         ]
         for col, v in enumerate(values, start=1):

@@ -256,10 +256,12 @@ def update_survey(survey_id: int, payload: dict, request: Request, user: User = 
     s.counselor = clean.get("counselor", "")
     s.service_type = clean.get("service_type", "")
     s.service_date = clean.get("service_date", "")
-    s.strengths = clean.get("strengths", "")
-    s.strengths_extra = clean.get("strengths_extra", "")
-    s.improvement = clean.get("improvement", "")
-    s.improvement_extra = clean.get("improvement_extra", "")
+    # نقاط قوت/پیشنهاد بهبود در فرم «مشاورهٔ فردی» نیستند؛ اگر کلاینت نفرستدشان
+    # مقدار فعلی رکورد حفظ می‌شود تا ویرایش رکوردهای قدیمی تلفنی داده نکشد
+    s.strengths = clean.get("strengths", "") if "strengths" in payload else (s.strengths or "")
+    s.strengths_extra = clean.get("strengths_extra", "") if "strengths_extra" in payload else (s.strengths_extra or "")
+    s.improvement = clean.get("improvement", "") if "improvement" in payload else (s.improvement or "")
+    s.improvement_extra = clean.get("improvement_extra", "") if "improvement_extra" in payload else (s.improvement_extra or "")
     s.supervisor_name = clean.get("supervisor_name", "")
     s.supervisor_signature = clean.get("supervisor_signature", "")
     _save_answers(db, s, clean)

@@ -185,10 +185,8 @@
       counselor: $("counselor").value.trim(),
       service_type: $("service_type").value.trim(),
       service_date: getDateStr("s"),
-      strengths: $("strengths").value.trim(),
-      strengths_extra: $("strengths_extra").value.trim(),
-      improvement: $("improvement").value.trim(),
-      improvement_extra: $("improvement_extra").value.trim(),
+      /* نقاط قوت/پیشنهاد بهبود در فرم «مشاورهٔ فردی» نیست؛ ارسال نمی‌شوند تا
+         مقدار قدیمی رکوردهای تلفنی هنگام ویرایش سرنشین بماند (PATCH حفظ می‌کند) */
       supervisor_name: $("supervisor_name").value.trim(),
       supervisor_signature: $("supervisor_signature").value.trim(),
       answers: answers
@@ -204,10 +202,6 @@
     $("service_type").value = rec.service_type || "";
     /* تاریخ دریافت خدمت اختیاری است؛ مقدار قدیمیِ غیرتاریخی در کادرها جا نمی‌شود و خالی می‌ماند */
     setDateStr(rec.service_date || "", "s");
-    $("strengths").value = rec.strengths || "";
-    $("strengths_extra").value = rec.strengths_extra || "";
-    $("improvement").value = rec.improvement || "";
-    $("improvement_extra").value = rec.improvement_extra || "";
     $("supervisor_name").value = rec.supervisor_name || "";
     $("supervisor_signature").value = rec.supervisor_signature || "";
     loadProvinces(rec.province.id).then(function () {
