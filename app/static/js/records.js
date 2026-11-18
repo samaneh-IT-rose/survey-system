@@ -9,7 +9,10 @@
 
   function qs() {
     var p = new URLSearchParams();
+    if ($("fform").value) p.set("form", $("fform").value);
     if ($("fq").value.trim()) p.set("q", $("fq").value.trim());
+    if ($("fcounselor").value) p.set("counselor", $("fcounselor").value);
+    if ($("fservice").value) p.set("service_type", $("fservice").value);
     if ($("fprovince").value) p.set("province_id", $("fprovince").value);
     if ($("fcounty").value) p.set("county_id", $("fcounty").value);
     if ($("fcontact").value) p.set("contact_option_id", $("fcontact").value);
@@ -25,7 +28,7 @@
   function opButtons(r) {
     var prefix = window.__PREFIX__;
     var out = '';
-    if (has("edit")) out += '<a class="btn sm" title="ویرایش" href="' + prefix + '/?id=' + r.id + '">✏ ویرایش</a>';
+    if (has("edit")) out += '<a class="btn sm" title="ویرایش" href="' + prefix + '/form/' + (r.form_key || 'tel') + '?id=' + r.id + '">✏ ویرایش</a>';
     if (has("print")) {
       out += '<a class="btn sm" title="چاپ" target="_blank" href="' + prefix + '/print/' + r.id + '">🖨 چاپ</a>';
       out += '<a class="btn sm" title="PDF" href="' + API('/surveys/' + r.id + '/pdf') + '">📄 PDF</a>';
@@ -39,11 +42,12 @@
     $("totalBadge").textContent = window.S.faNum(data.total) + " رکورد";
     var body = $("rowsBody");
     if (!data.items.length) {
-      body.innerHTML = '<tr><td colspan="8" class="muted">رکوردی یافت نشد.</td></tr>';
+      body.innerHTML = '<tr><td colspan="9" class="muted">رکوردی یافت نشد.</td></tr>';
     } else {
       body.innerHTML = data.items.map(function (r) {
         return '<tr>' +
           '<td><bdi>#' + r.id + '</bdi></td>' +
+          '<td><span class="badge">' + (r.form_title || "") + '</span></td>' +
           '<td>' + r.first_name + ' ' + r.last_name + '</td>' +
           '<td><bdi>' + r.national_code + '</bdi></td>' +
           '<td><bdi>' + r.phone + '</bdi></td>' +
@@ -73,16 +77,23 @@
   }
 
   async function load() {
-    $("rowsBody").innerHTML = '<tr><td colspan="8" class="muted">در حال بارگذاری…</td></tr>';
+    $("rowsBody").innerHTML = '<tr><td colspan="9" class="muted">در حال بارگذاری…</td></tr>';
     try {
       var data = await window.S.fetchJSON(API("/surveys?" + qs()));
       render(data);
     } catch (e) {
-      $("rowsBody").innerHTML = '<tr><td colspan="8" class="muted">' + e.message + '</td></tr>';
+      $("rowsBody").innerHTML = '<tr><td colspan="9" class="muted">' + e.message + '</td></tr>';
     }
   }
 
   async function loadFilters() {
+    // فیلتر فرم — از فهرست فرم‌های سامانه
+    var FORMS = window.__FORMS__ || [];
+    FORMS.forEach(function (f) {
+      var o = document.createElement("option");
+      o.value = f.key; o.textContent = f.title;
+      $("fform").appendChild(o);
+    });
     var provinces = await window.S.fetchJSON(API("/provinces"));
     provinces.forEach(function (p) {
       var o = document.createElement("option");
@@ -95,6 +106,20 @@
       o.value = c.id; o.textContent = c.text;
       $("fcontact").appendChild(o);
     });
+    // فیلترهای «مشاور» و «نوع خدمت» — مقادیر مجزای رکوردهای موجود
+    try {
+      var facets = await window.S.fetchJSON(API("/surveys/facets"));
+      facets.counselors.forEach(function (v) {
+        var o = document.createElement("option");
+        o.value = v; o.textContent = v;
+        $("fcounselor").appendChild(o);
+      });
+      facets.service_types.forEach(function (v) {
+        var o = document.createElement("option");
+        o.value = v; o.textContent = v;
+        $("fservice").appendChild(o);
+      });
+    } catch (e) { /* فیلترهای اختیاری */ }
   }
 
   $("fprovince").addEventListener("change", function () {

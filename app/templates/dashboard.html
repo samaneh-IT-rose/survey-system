@@ -17,6 +17,18 @@
   <h2>فیلترها</h2>
   <div class="filters">
     <div class="field">
+      <label for="fform">فرم</label>
+      <select id="fform"><option value="">همهٔ فرم‌ها</option></select>
+    </div>
+    <div class="field">
+      <label for="fcounselor">مشاور</label>
+      <select id="fcounselor"><option value="">همه</option></select>
+    </div>
+    <div class="field">
+      <label for="fservice">نوع خدمت</label>
+      <select id="fservice"><option value="">همه</option></select>
+    </div>
+    <div class="field">
       <label for="fprovince">استان</label>
       <select id="fprovince"><option value="">همه</option></select>
     </div>
@@ -53,6 +65,42 @@
   <div class="kpi"><div class="v" id="kpiUpdated">—</div><div class="t">تاریخ گزارش (شمسی)</div></div>
 </div>
 
+<section class="card" id="combinedCard">
+  <h2>تحلیل تلفیقی همهٔ فرم‌ها</h2>
+  <div class="sub" style="margin-bottom:10px">
+    درصد رضایت از خدمات ارائه‌شده از ترکیب سؤال «رضایت کل» همهٔ فرم‌ها —
+    هر فرم سهم خودش را در عدد نهایی دارد (تلفنی، حضوری، گروهی و …).
+  </div>
+  <div class="kpis">
+    <div class="kpi"><div class="v" id="kpiCombined">—</div><div class="t">درصد رضایت از خدمات ارائه‌شده (ترکیب همهٔ فرم‌ها)</div></div>
+    <div class="kpi"><div class="v" id="kpiCombinedAnswered">—</div><div class="t">تعداد پاسخ‌های مؤثر در ترکیب</div></div>
+    <div class="kpi"><div class="v" id="kpiCombinedRecords">—</div><div class="t">مجموع رکوردهای همهٔ فرم‌ها</div></div>
+  </div>
+  <div class="charts" style="margin-top:12px">
+    <div class="chartbox" style="grid-column: 1 / -1;">
+      <h3>سهم و رضایت هر فرم در ترکیب نهایی</h3>
+      <div class="ch" id="chartCombined"></div>
+    </div>
+  </div>
+  <div class="tablewrap" style="margin-top:8px">
+    <table class="rtable">
+      <thead>
+        <tr>
+          <th>فرم</th>
+          <th>تعداد رکورد</th>
+          <th>پاسخ‌داده‌شده به سؤال رضایت کل</th>
+          <th>نفرات راضی (خیلی زیاد + زیاد)</th>
+          <th>درصد رضایت</th>
+          <th>بدون پاسخ</th>
+        </tr>
+      </thead>
+      <tbody id="combinedRows">
+        <tr><td colspan="6" class="muted">در حال بارگذاری…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
 <div class="charts">
   <div class="chartbox" style="grid-column: 1 / -1;">
     <h3>فراوانی گزینه‌های هر سؤال (بدون پاسخ جداگانه)</h3>
@@ -74,6 +122,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script>window.__FORMS__ = {{ forms | tojson }};</script>
 <script src="{{ prefix }}/static/vendor/echarts.min.js"></script>
 <script src="{{ asset('static/js/dashboard.js') }}"></script>
 {% endblock %}

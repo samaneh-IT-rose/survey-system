@@ -153,8 +153,74 @@
     $("kpiUpdated").textContent = window.S.faNum(document.querySelector("footer bdi").textContent);
   }
 
+  /* ---------- تحلیل تلفیقی همهٔ فرم‌ها ---------- */
+  function renderCombined(data) {
+    var c = data.combined || {};
+    var perForm = c.per_form || [];
+    $("kpiCombined").textContent =
+      (c.satisfied_rate === null || c.satisfied_rate === undefined) ? "—"
+      : window.S.faNum(String(c.satisfied_rate).replace(".", "٫")) + "٪";
+    $("kpiCombinedAnswered").textContent = window.S.faNum(c.answered || 0);
+    $("kpiCombinedRecords").textContent = window.S.faNum(c.total_records || 0);
+
+    var body = $("combinedRows");
+    if (!perForm.length) {
+      body.innerHTML = '<tr><td colspan="6" class="muted">فرمی برای گزارش نیست.</td></tr>';
+    } else {
+      body.innerHTML = perForm.map(function (f) {
+        var rate = (f.satisfied_rate === null || f.satisfied_rate === undefined) ? "—"
+          : window.S.faNum(String(f.satisfied_rate).replace(".", "٫")) + "٪";
+        return '<tr>' +
+          '<td>' + f.short_title + '</td>' +
+          '<td>' + window.S.faNum(f.total) + '</td>' +
+          '<td>' + window.S.faNum(f.answered) + '</td>' +
+          '<td>' + window.S.faNum(f.satisfied) + '</td>' +
+          '<td><b>' + rate + '</b></td>' +
+          '<td>' + window.S.faNum(f.no_answer) + '</td>' +
+          '</tr>';
+      }).join("");
+    }
+
+    var ch = makeChart("chartCombined");
+    var rows = perForm.slice().reverse();
+    ch.setOption({
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "shadow" },
+        formatter: function (items) {
+          var it = items[0];
+          var f = perForm[perForm.length - 1 - it.dataIndex];
+          if (!f) return "";
+          return f.title + "<br>" +
+            "رکورد: " + window.S.faNum(f.total) + "<br>" +
+            "پاسخ‌داده‌شده: " + window.S.faNum(f.answered) + "<br>" +
+            "راضی: " + window.S.faNum(f.satisfied) +
+            (f.satisfied_rate === null ? "" : "<br>درصد رضایت: " + window.S.faNum(String(f.satisfied_rate).replace(".", "٫")) + "٪");
+        }
+      },
+      grid: { right: 40, left: 110, top: 10, bottom: 40, containLabel: false },
+      xAxis: Object.assign(baseAxis(), {
+        type: "value",
+        max: 100,
+        axisLabel: { formatter: "{value}%", color: textColor(), fontFamily: "Vazirmatn", fontSize: 11 },
+        splitLine: { lineStyle: { color: borderColor() } }
+      }),
+      yAxis: Object.assign(baseAxis(), { type: "category", data: rows.map(function (f) { return f.short_title; }) }),
+      series: [{
+        name: "درصد رضایت",
+        type: "bar",
+        barMaxWidth: 26,
+        itemStyle: { color: cssVar("--primary", "#ba376d"), borderRadius: [0, 6, 6, 0] },
+        data: rows.map(function (f) { return f.satisfied_rate === null || f.satisfied_rate === undefined ? 0 : f.satisfied_rate; })
+      }]
+    });
+  }
+
   async function load() {
     var p = new URLSearchParams();
+    if ($("fform").value) p.set("form", $("fform").value);
+    if ($("fcounselor").value) p.set("counselor", $("fcounselor").value);
+    if ($("fservice").value) p.set("service_type", $("fservice").value);
     if ($("fprovince").value) p.set("province_id", $("fprovince").value);
     if ($("fcounty").value) p.set("county_id", $("fcounty").value);
     if ($("fcontact").value) p.set("contact_option_id", $("fcontact").value);
@@ -164,6 +230,7 @@
     if (to) p.set("date_to", to);
     var data = await window.S.fetchJSON(API("/dashboard?" + p.toString()));
     faKpi(data);
+    renderCombined(data);
     renderQuestions(data);
     renderContact(data);
     renderProvince(data);
@@ -172,6 +239,9 @@
 
   function loadExcel() {
     var p = new URLSearchParams();
+    if ($("fform").value) p.set("form", $("fform").value);
+    if ($("fcounselor").value) p.set("counselor", $("fcounselor").value);
+    if ($("fservice").value) p.set("service_type", $("fservice").value);
     if ($("fprovince").value) p.set("province_id", $("fprovince").value);
     if ($("fcounty").value) p.set("county_id", $("fcounty").value);
     if ($("fcontact").value) p.set("contact_option_id", $("fcontact").value);
@@ -183,6 +253,13 @@
   }
 
   document.addEventListener("DOMContentLoaded", async function () {
+    // فیلتر فرم — از فهرست فرم‌های سامانه
+    var FORMS = window.__FORMS__ || [];
+    FORMS.forEach(function (f) {
+      var o = document.createElement("option");
+      o.value = f.key; o.textContent = f.title;
+      $("fform").appendChild(o);
+    });
     var provinces = await window.S.fetchJSON(API("/provinces"));
     provinces.forEach(function (p) {
       var o = document.createElement("option");
@@ -195,6 +272,20 @@
       o.value = c.id; o.textContent = c.text;
       $("fcontact").appendChild(o);
     });
+    // فیلترهای «مشاور» و «نوع خدمت»
+    try {
+      var facets = await window.S.fetchJSON(API("/surveys/facets"));
+      facets.counselors.forEach(function (v) {
+        var o = document.createElement("option");
+        o.value = v; o.textContent = v;
+        $("fcounselor").appendChild(o);
+      });
+      facets.service_types.forEach(function (v) {
+        var o = document.createElement("option");
+        o.value = v; o.textContent = v;
+        $("fservice").appendChild(o);
+      });
+    } catch (e) { /* اختیاری */ }
 
     $("fprovince").addEventListener("change", function () {
       var sel = $("fcounty");
@@ -212,6 +303,7 @@
 
     $("applyBtn").addEventListener("click", function () { load().catch(function (e) { window.S.toast(e.message, "err"); }); });
     $("resetBtn").addEventListener("click", function () {
+      $("fform").value = ""; $("fcounselor").value = ""; $("fservice").value = "";
       $("fprovince").value = ""; $("fcounty").value = ""; $("fcontact").value = "";
       $("ffrom").value = ""; $("fto").value = "";
       $("fcounty").disabled = true;

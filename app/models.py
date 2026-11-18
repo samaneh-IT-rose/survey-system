@@ -50,7 +50,11 @@ class County(Base):
 
 
 class Question(Base):
-    """پرسش‌های امتیازدهی جدول نظرسنجی (قابل ویرایش از مدیریت الگوی فرم)."""
+    """پرسش‌های امتیازدهی جدول نظرسنجی (قابل ویرایش از مدیریت الگوی فرم).
+
+    form_keys مشخص می‌کند این پرسش به کدام فرم(ها) تعلق دارد
+    (مثل «tel» یا «tel,individual») — هر فرم سؤال‌های خودش را دارد.
+    """
 
     __tablename__ = "questions"
 
@@ -58,12 +62,17 @@ class Question(Base):
     text: Mapped[str] = mapped_column(Text, nullable=False)
     display_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    # فرم‌های تعلق — جدا با کاما؛ خالی یعنی ردیف قدیمی که هنگام استارت برچسب می‌خورد
+    form_keys: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
 
     answers: Mapped[list["SurveyAnswer"]] = relationship(back_populates="question")
 
 
 class ContactOption(Base):
-    """وضعیت‌های تماس — متن و تعداد آن‌ها پس از دریافت فایل Word قابل اصلاح است."""
+    """وضعیت‌های تماس — متن و تعداد آن‌ها پس از دریافت فایل Word قابل اصلاح است.
+
+    form_keys مثل سؤال‌ها: وضعیت‌های مشترک چند فرم با «tel,individual» برچسب می‌خورند.
+    """
 
     __tablename__ = "contact_options"
 
@@ -73,6 +82,8 @@ class ContactOption(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     # اگر False باشد، تکمیل جدول امتیازدهی الزامی نیست (مثلاً «در دسترس نبود»)
     requires_answers: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    # فرم‌های تعلق — جدا با کاما
+    form_keys: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
 
 
 class Survey(Base):
@@ -95,6 +106,8 @@ class Survey(Base):
     contact_option_id: Mapped[int | None] = mapped_column(
         ForeignKey("contact_options.id"), nullable=True
     )
+    # کدام فرم ثبت این رکورد را ساخته؟ (tel / individual / ...) — رکوردهای قدیمی تلفنی‌اند
+    form_key: Mapped[str] = mapped_column(String(20), nullable=False, default="tel", server_default="tel", index=True)
 
     # ── فیلدهای فرم نمونه (همه اختیاری؛ برای رکوردهای قدیمی رشتهٔ خالی) ──
     # مشاور

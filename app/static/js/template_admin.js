@@ -2,6 +2,8 @@
 (function () {
   var API = window.S.api;
   var $ = function (id) { return document.getElementById(id); };
+  /* فرم فعلی — الگو به تفکیک فرم مدیریت می‌شود */
+  var currentForm = (window.__FORM_KEY__ || "tel");
 
   function miniBtns(kind, item) {
     return '<div class="mini">' +
@@ -41,10 +43,15 @@
   }
 
   async function reload() {
-    var qs = await window.S.fetchJSON(API("/template/questions"));
-    var cs = await window.S.fetchJSON(API("/template/contact-options"));
+    var qs = await window.S.fetchJSON(API("/template/questions?form=" + encodeURIComponent(currentForm)));
+    var cs = await window.S.fetchJSON(API("/template/contact-options?form=" + encodeURIComponent(currentForm)));
     renderQuestions(qs);
     renderContacts(cs);
+  }
+
+  function setForm(key) {
+    currentForm = key;
+    reload();
   }
 
   function parseToken(token) {
@@ -58,7 +65,7 @@
     await window.S.fetchJSON(API(path), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ direction: direction })
+      body: JSON.stringify({ direction: direction, form: currentForm })
     });
     reload();
   }
@@ -151,7 +158,7 @@
         var res = await window.S.fetchJSON(API(path), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ texts: lines })
+          body: JSON.stringify({ texts: lines, form: currentForm })
         });
         bulkModal.hidden = true;
         window.S.toast(res.replaced + " مورد جای‌گذاری شد.", "ok");
@@ -167,7 +174,7 @@
       await window.S.fetchJSON(API("/template/questions"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: text })
+        body: JSON.stringify({ text: text, form: currentForm })
       });
       $("newQ").value = "";
       window.S.toast("سؤال جدید افزوده شد.", "ok");
@@ -179,12 +186,19 @@
       await window.S.fetchJSON(API("/template/contact-options"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: text, requires_answers: $("newCRequires").checked })
+        body: JSON.stringify({ text: text, requires_answers: $("newCRequires").checked, form: currentForm })
       });
       $("newC").value = "";
       window.S.toast("وضعیت تماس جدید افزوده شد.", "ok");
       reload();
     });
+    // ---------- انتخاب فرم ----------
+    var sel = $("formSelect");
+    if (sel) {
+      sel.value = currentForm;
+      sel.addEventListener("change", function () { setForm(sel.value); });
+    }
+
     reload();
   });
 })();

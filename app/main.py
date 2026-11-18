@@ -29,10 +29,16 @@ from .routers import (
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     # مهاجرت‌های خودکار سبک: ستون‌های فیلدهای فرم نمونه + سطح کاربری و
-    # سطوح دسترسی کاربران — بدون دست‌زدن به داده‌های موجود
-    from .database import ensure_schema_updates
+    # سطوح دسترسی کاربران + ستون‌های چند-فرمی — بدون دست‌زدن به داده‌های موجود
+    from .database import ensure_schema_updates, tag_legacy_rows
 
     ensure_schema_updates(engine)
+    tag_legacy_rows(engine)
+    # اطمینان از وجود الگوی رسمی همهٔ فرم‌ها (سؤال‌ها و وضعیت‌های تماس هر فرم)
+    from .services.form_template import ensure_form_templates
+
+    with SessionLocal() as _db:
+        ensure_form_templates(_db)
     _bootstrap_admin()
     yield
 

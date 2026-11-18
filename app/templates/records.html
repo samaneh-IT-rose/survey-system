@@ -9,7 +9,7 @@
     <div class="sub">مشاهده، ویرایش، چاپ و خروجی گرفتن از رکوردهای ذخیره‌شده</div>
   </div>
   {% if user and user.has_perm('edit') %}
-  <a class="btn primary sm" href="{{ prefix }}/">+ ثبت فرم جدید</a>
+  <a class="btn primary sm" href="{{ prefix }}{{ forms[0].url if forms else '/' }}">+ ثبت فرم جدید</a>
   {% endif %}
 </div>
 
@@ -17,8 +17,20 @@
   <h2>فیلتر و جست‌وجو</h2>
   <div class="filters">
     <div class="field">
+      <label for="fform">فرم</label>
+      <select id="fform"><option value="">همهٔ فرم‌ها</option></select>
+    </div>
+    <div class="field">
       <label for="fq">جست‌وجو (نام / کد ملی / تلفن)</label>
       <input id="fq" type="search" class="input" placeholder="مثلاً رضایی یا ۰۹۱۲…">
+    </div>
+    <div class="field">
+      <label for="fcounselor">مشاور</label>
+      <select id="fcounselor"><option value="">همه</option></select>
+    </div>
+    <div class="field">
+      <label for="fservice">نوع خدمت</label>
+      <select id="fservice"><option value="">همه</option></select>
     </div>
     <div class="field">
       <label for="fprovince">استان</label>
@@ -57,6 +69,7 @@
       <thead>
         <tr>
           <th>شناسه</th>
+          <th>فرم</th>
           <th>نام و نام خانوادگی</th>
           <th>کد ملی</th>
           <th>تلفن</th>
@@ -67,7 +80,7 @@
         </tr>
       </thead>
       <tbody id="rowsBody">
-        <tr><td colspan="8" class="muted">در حال بارگذاری…</td></tr>
+        <tr><td colspan="9" class="muted">در حال بارگذاری…</td></tr>
       </tbody>
     </table>
   </div>
@@ -79,5 +92,6 @@
 {% endblock %}
 
 {% block scripts %}
+<script>window.__FORMS__ = {{ forms | tojson }};</script>
 <script src="{{ asset('static/js/records.js') }}"></script>
 {% endblock %}

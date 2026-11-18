@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """صفحات رابط کاربری (Jinja2) — همه زیر پیشوند /app و با کنترل دسترسی."""
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -65,21 +65,33 @@ def _year_range() -> list[int]:
 
 
 @router.get("/", response_class=HTMLResponse)
-def form_page(request: Request, user: User = Depends(page_require_perm(PERM_EDIT)), db: Session = Depends(get_db)):
-    from ..models import ContactOption, Question
+def form_root(request: Request, user: User = Depends(page_require_perm(PERM_EDIT))):
+    """مسیر قدیمی فرم — پرت به اولین فرم فعال (منوی «فرم‌های نظرسنجی»)."""
+    from ..forms_registry import DEFAULT_FORM_KEY
 
-    questions = db.scalars(
-        select(Question).where(Question.is_active.is_(True)).order_by(Question.display_order, Question.id)
-    ).all()
-    contacts = db.scalars(
-        select(ContactOption).where(ContactOption.is_active.is_(True)).order_by(ContactOption.display_order, ContactOption.id)
-    ).all()
+    return RedirectResponse(url=f"{APP_PREFIX}/form/{DEFAULT_FORM_KEY}", status_code=307)
+
+
+@router.get("/form/{form_key}", response_class=HTMLResponse)
+def form_page(form_key: str, request: Request, user: User = Depends(page_require_perm(PERM_EDIT)), db: Session = Depends(get_db)):
+    """صفحهٔ ثبت هر فرم — سؤال‌ها و وضعیت‌های تماس همان فرم."""
+    from ..forms_registry import form_by_key
+    from ..models import ContactOption, Question
+    from ..services.form_template import contacts_for_form, questions_for_form
+
+    form = form_by_key(form_key)
+    if form is None:
+        raise HTTPException(404, detail="فرم نظرسنجی یافت نشد.")
+
+    questions = questions_for_form(db, form["key"])
+    contacts = contacts_for_form(db, form["key"])
     return templates.TemplateResponse(
         request,
         "form.html",
         _ctx(
             user,
-            page_title="ثبت فرم نظرسنجی",
+            page_title=form["title"],
+            form=form,
             questions=[{"id": q.id, "text": q.text} for q in questions],
             contact_options=[
                 {"id": c.id, "text": c.text, "requires_answers": c.requires_answers}
@@ -143,11 +155,16 @@ def api_keys_page(request: Request, user: User = Depends(page_admin)):
 
 @router.get("/print/{survey_id}", response_class=HTMLResponse)
 def print_page(survey_id: int, request: Request, user: User = Depends(page_require_perm(PERM_PRINT)), db: Session = Depends(get_db)):
+    from ..forms_registry import DEFAULT_FORM_KEY, form_by_key
     from ..models import Survey
     from ..services.sheet import build_sheet_context
 
     s = db.get(Survey, survey_id)
     if s is None:
         raise HTTPException(404, detail="رکورد یافت نشد.")
+    form_key = s.form_key or DEFAULT_FORM_KEY
+    form = form_by_key(form_key)
+    # هر فرم قالب چاپ خودش را دارد (عین فایل نمونهٔ همان فرم)
+    template_name = form["sheet_template"] if form else "sheet.html"
     ctx = _ctx(user, **build_sheet_context(db, s, interactive=True))
-    return templates.TemplateResponse(request, "sheet.html", ctx)
+    return templates.TemplateResponse(request, template_name, ctx)

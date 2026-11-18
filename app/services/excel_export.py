@@ -13,7 +13,9 @@ from sqlalchemy.orm import Session
 
 from ..config import ORG_NAME
 from ..constants import RATING_LABELS
+from ..forms_registry import enabled_forms, form_short_title
 from ..models import ContactOption, Question, Survey
+from ..services.form_template import questions_for_form
 from ..utils.jalali import gdate_to_jalali_str, today_jalali_str
 
 HEADER_FILL = PatternFill("solid", fgColor="BA376D")
@@ -25,10 +27,24 @@ CENTER = Alignment(horizontal="center", vertical="center", wrap_text=True)
 RIGHT = Alignment(horizontal="right", vertical="center", wrap_text=True)
 
 
+def _qid_of(form_questions: dict[str, list[Question]], form_key: str, q_text: str) -> int | None:
+    """شناسهٔ سؤال از بلوک سؤال‌های همان فرم — بر اساس متن."""
+    for q in form_questions.get(form_key, []):
+        if q.text.strip() == q_text.strip():
+            return q.id
+    return None
+
+
 def _fetch_filtered(db: Session, filters: dict) -> list[Survey]:
     from sqlalchemy import or_
 
     stmt = select(Survey).order_by(Survey.survey_date.desc(), Survey.id.desc())
+    if filters.get("form"):
+        stmt = stmt.where(Survey.form_key == filters["form"])
+    if filters.get("counselor"):
+        stmt = stmt.where(Survey.counselor == filters["counselor"].strip())
+    if filters.get("service_type"):
+        stmt = stmt.where(Survey.service_type == filters["service_type"].strip())
     q = filters.get("q")
     if q:
         needle = f"%{q.strip()}%"
@@ -61,9 +77,14 @@ def _fetch_filtered(db: Session, filters: dict) -> list[Survey]:
 
 
 def build_excel(db: Session, filters: dict) -> tuple[bytes, str]:
-    questions = db.scalars(
-        select(Question).where(Question.is_active.is_(True)).order_by(Question.display_order, Question.id)
-    ).all()
+    """ستون‌های سؤال به تفکیک فرم: هر فرم فعال بلوک سؤال‌های خودش را دارد و
+    هر رکورد فقط در بلوک فرمِ خودش مقدار می‌گیرد (بقیه خالی می‌ماند)."""
+    forms = enabled_forms()
+    if filters.get("form"):
+        forms = [f for f in forms if f["key"] == filters["form"]]
+    form_questions: dict[str, list[Question]] = {
+        f["key"]: questions_for_form(db, f["key"]) for f in forms
+    }
     rows = _fetch_filtered(db, filters)
 
     wb = Workbook()
@@ -72,13 +93,18 @@ def build_excel(db: Session, filters: dict) -> tuple[bytes, str]:
     ws.sheet_view.rightToLeft = True
 
     headers = [
-        "ردیف", "نام", "نام خانوادگی", "کد ملی", "شماره تماس مراجع",
+        "ردیف", "فرم", "نام", "نام خانوادگی", "کد ملی", "شماره تماس مراجع",
         "استان", "شهرستان", "تاریخ نظرسنجی (شمسی)", "وضعیت تماس",
-        "مشاور", "نوع خدمت", "تاریخ دریافت خدمت",
-        "نقاط قوت", "پیشنهاد بهبود", "کارشناس نظارت حرفه‌ای",
-    ] + [f"سؤال {i + 1}: {q.text}" for i, q in enumerate(questions)] + [
-        "زمان ثبت (شمسی)",
+        "مشاور", "نوع خدمت", "تاریخ دریافت خدمت (شمسی)",
+        "نقاط قوت مشاوره تلفنی", "پیشنهاد بهبود", "کارشناس نظارت حرفه‌ای",
     ]
+    # بلوک سؤال‌های هر فرم — سرستون با برچسب کوتاه فرم شروع می‌شود
+    question_columns: list[tuple[str, str]] = []  # (form_key, متن سؤال)
+    for f in forms:
+        for q in form_questions[f["key"]]:
+            headers.append(f"{form_short_title(f['key'])} — سؤال {len(question_columns) + 1}: {q.text}")
+            question_columns.append((f["key"], q.text))
+    headers += ["زمان ثبت (شمسی)"]
 
     # سطر عنوان گزارش
     ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=len(headers))
@@ -106,11 +132,19 @@ def build_excel(db: Session, filters: dict) -> tuple[bytes, str]:
         strengths = " ".join(x for x in [s.strengths or "", s.strengths_extra or ""] if x)
         improvement = " ".join(x for x in [s.improvement or "", s.improvement_extra or ""] if x)
         values = [
-            i, s.first_name, s.last_name, s.national_code, s.phone,
+            i, form_short_title(s.form_key), s.first_name, s.last_name, s.national_code, s.phone,
             s.province.name, s.county.name, gdate_to_jalali_str(s.survey_date), contact_text,
             s.counselor or "", s.service_type or "", s.service_date or "",
             strengths, improvement, s.supervisor_name or "",
-        ] + [answers_by_id.get(q.id) or answers_by_text.get(q.text.strip(), "") for q in questions] + [
+        ]
+        # هر رکورد فقط در بلوک سؤال‌های فرم خودش مقدار می‌گیرد
+        rec_form = s.form_key or ""
+        for fq_key, q_text in question_columns:
+            if fq_key != rec_form:
+                values.append("")
+            else:
+                values.append(answers_by_id.get(_qid_of(form_questions, fq_key, q_text)) or answers_by_text.get(q_text, ""))
+        values += [
             gdate_to_jalali_str(s.created_at.date()) if s.created_at else "",
         ]
         for col, v in enumerate(values, start=1):
@@ -120,13 +154,13 @@ def build_excel(db: Session, filters: dict) -> tuple[bytes, str]:
             c.alignment = CENTER if col in (1, 4, 5, 8) else RIGHT
 
     # عرض ستون‌ها
-    base_widths = [6, 14, 16, 14, 14, 12, 14, 16, 24, 14, 14, 16, 30, 30, 18]
+    base_widths = [6, 16, 14, 16, 14, 14, 12, 14, 16, 24, 14, 14, 16, 30, 30, 18]
     for col, w in enumerate(base_widths, start=1):
         ws.column_dimensions[get_column_letter(col)].width = w
-    for i in range(len(questions)):
+    for i in range(len(question_columns)):
         ws.column_dimensions[get_column_letter(len(base_widths) + i + 1)].width = 16
     ws.column_dimensions[get_column_letter(len(headers))].width = 16
-    ws.freeze_panes = "C3"
+    ws.freeze_panes = "D3"
 
     bio = io.BytesIO()
     wb.save(bio)

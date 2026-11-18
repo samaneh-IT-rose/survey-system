@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% block title %}ثبت فرم نظرسنجی مراجعین خدمات مشاوره فردی — {{ app_title }}{% endblock %}
+{% block title %}{{ form.title }} — {{ app_title }}{% endblock %}
 {% block content %}
 <div data-page="form"></div>
 
 <div class="pagehead">
   <div>
-    <h1 id="formTitle">ثبت فرم نظرسنجی مراجعین خدمات مشاوره فردی</h1>
+    <h1 id="formTitle">ثبت {{ form.title }}</h1>
     <div class="sub" id="editBadge"></div>
   </div>
   <a class="btn sm" href="{{ prefix }}/records">آرشیو فرم‌ها ←</a>
@@ -13,7 +13,7 @@
 
 <form id="surveyForm" novalidate>
   <section class="card">
-    <h2><span class="num">۱</span> مشخصات مراجع</h2>
+    <h2><span class="num">۱</span> {{ form.subject_label }}</h2>
     <div class="grid">
       <div class="field" id="f-first_name">
         <label for="first_name">نام <span class="req">*</span></label>
@@ -32,7 +32,7 @@
         <div class="err"></div>
       </div>
       <div class="field" id="f-phone">
-        <label for="phone">شماره تماس مراجع <span class="req">*</span></label>
+        <label for="phone">{{ form.phone_label }} <span class="req">*</span></label>
         <input id="phone" name="phone" type="tel" inputmode="numeric" maxlength="14" placeholder="۰۹۱۲۱۲۳۴۵۶۷">
         <div class="err"></div>
       </div>
@@ -61,7 +61,7 @@
         <div class="err"></div>
       </div>
       <div class="field" id="f-service_date">
-        <label for="sy">تاریخ دریافت خدمت</label>
+        <label for="sy">{{ form.service_date_label }}</label>
         <div class="datebox">
           <select id="sy" aria-label="سال دریافت خدمت"></select>
           <select id="sm" aria-label="ماه دریافت خدمت"></select>
@@ -135,8 +135,30 @@
   </section>
 
   <section class="card">
-    <h2><span class="num">۴</span> نظارت حرفه‌ای</h2>
+    <h2><span class="num">۴</span> {{ form.section4_title }}</h2>
     <div class="grid">
+      {% if form.has_strengths %}
+      <div class="field" id="f-strengths" style="grid-column: 1 / -1">
+        <label for="strengths">نقاط قوت مشاوره تلفنی</label>
+        <input id="strengths" name="strengths" type="text" maxlength="500">
+        <div class="err"></div>
+      </div>
+      <div class="field" id="f-strengths_extra" style="grid-column: 1 / -1">
+        <label for="strengths_extra">ادامهٔ نقاط قوت</label>
+        <input id="strengths_extra" name="strengths_extra" type="text" maxlength="500">
+        <div class="err"></div>
+      </div>
+      <div class="field" id="f-improvement" style="grid-column: 1 / -1">
+        <label for="improvement">پیشنهاد بهبود</label>
+        <input id="improvement" name="improvement" type="text" maxlength="500">
+        <div class="err"></div>
+      </div>
+      <div class="field" id="f-improvement_extra" style="grid-column: 1 / -1">
+        <label for="improvement_extra">ادامهٔ پیشنهاد بهبود</label>
+        <input id="improvement_extra" name="improvement_extra" type="text" maxlength="500">
+        <div class="err"></div>
+      </div>
+      {% endif %}
       <div class="field" id="f-supervisor_name">
         <label for="supervisor_name">نام و نام خانوادگی کارشناس نظارت حرفه‌ای</label>
         <input id="supervisor_name" name="supervisor_name" type="text" maxlength="120">
@@ -176,6 +198,8 @@ window.__BOOT__ = {
   years: {{ years | tojson }},
   leapYears: {{ leap_years | tojson }},
   questions: {{ questions | tojson }},
+  formKey: {{ form.key | tojson }},
+  formTitle: {{ form.title | tojson }},
   recordId: new URLSearchParams(location.search).get("id")
 };
 </script>

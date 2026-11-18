@@ -1,24 +1,23 @@
 # -*- coding: utf-8 -*-
-"""ساخت زمینه مشترک قالب ورقه A4 (چاپ مرورگر و PDF سرور)."""
+"""ساخت زمینه مشترک قالب ورقه A4 (چاپ مرورگر و PDF سرور) — به تفکیک فرم."""
 from __future__ import annotations
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..config import APP_TITLE, FORM_CODE, ORG_NAME
-from ..models import ContactOption, Question, Survey
+from ..config import FORM_CODE, ORG_NAME
+from ..forms_registry import DEFAULT_FORM_KEY, form_by_key
+from ..models import Survey
 from ..routers.api_surveys import serialize_survey
-from ..seed_data.defaults import DEFAULT_FORM_TITLE
+from ..services.form_template import questions_for_form
 from ..utils.jalali import today_jalali_str
 
 
 def build_sheet_context(db: Session, survey: Survey, *, interactive: bool) -> dict:
     record = serialize_survey(survey)
-    active_questions = db.scalars(
-        select(Question)
-        .where(Question.is_active.is_(True))
-        .order_by(Question.display_order, Question.id)
-    ).all()
+    form_key = survey.form_key or DEFAULT_FORM_KEY
+    form = form_by_key(form_key)
+    active_questions = questions_for_form(db, form_key)
     # تطبیق پاسخ‌ها: اول با شناسهٔ سؤال، و اگر رکورد قدیمی بود و سؤالش با
     # همگام‌سازی الگو شناسهٔ جدید گرفته بود، با متن سؤالِ ذخیره‌شده (snapshot)
     answers_by_qid: dict[int, str] = {}
@@ -27,11 +26,10 @@ def build_sheet_context(db: Session, survey: Survey, *, interactive: bool) -> di
         answers_by_qid[a["question_id"]] = a["value"]
         if a.get("question_text"):
             answers_by_text[a["question_text"].strip()] = a["value"]
-    contacts = db.scalars(
-        select(ContactOption)
-        .where(ContactOption.is_active.is_(True))
-        .order_by(ContactOption.display_order, ContactOption.id)
-    ).all()
+    from ..models import ContactOption
+    from ..services.form_template import contacts_for_form
+
+    contacts = contacts_for_form(db, form_key)
 
     # رکوردهای قدیمی پس از گذار الگو (مثلاً رکورد نسخهٔ تلفنی در سامانهٔ فرم فردی):
     # اگر متن سؤال‌های پاسخ‌داده‌شدهٔ رکورد در الگوی فعلی نیست، همان سؤال‌های
@@ -64,8 +62,8 @@ def build_sheet_context(db: Session, survey: Survey, *, interactive: bool) -> di
         "contact_options": [{"id": c.id, "text": c.text} for c in contacts],
         "interactive": interactive,
         "org_name": ORG_NAME,
-        "app_title": APP_TITLE,
-        "form_title": DEFAULT_FORM_TITLE,
+        "form_title": form["title"] if form else form_title,
         "form_code": FORM_CODE,
+        "form_key": form_key,
         "today": today_jalali_str(),
     }

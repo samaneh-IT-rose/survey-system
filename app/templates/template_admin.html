@@ -6,7 +6,15 @@
 <div class="pagehead">
   <div>
     <h1>مدیریت الگوی فرم</h1>
-    <div class="sub">ویرایش عنوان‌ها، متن پرسش‌ها و وضعیت‌های تماس (بخش ۸ سند)</div>
+    <div class="sub">ویرایش عنوان‌ها، متن پرسش‌ها و وضعیت‌های تماس (بخش ۸ سند) — به تفکیک فرم</div>
+  </div>
+  <div class="field" style="min-width:280px">
+    <label for="formSelect">فرم مورد ویرایش</label>
+    <select id="formSelect">
+      {% for f in forms %}
+      <option value="{{ f.key }}">{{ f.title }}</option>
+      {% endfor %}
+    </select>
   </div>
 </div>
 
@@ -59,5 +67,9 @@
 {% endblock %}
 
 {% block scripts %}
+<script>
+window.__FORMS__ = {{ forms | tojson }};
+window.__FORM_KEY__ = window.__FORMS__.length ? window.__FORMS__[0].key : "tel";
+</script>
 <script src="{{ asset('static/js/template_admin.js') }}"></script>
 {% endblock %}

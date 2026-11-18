@@ -13,7 +13,9 @@ from sqlalchemy import select
 
 from ..constants import RATING_LABELS, RATING_LABEL_TO_SCORE
 from ..database import SessionLocal
+from ..forms_registry import DEFAULT_FORM_KEY, FORM_KEYS, form_by_key
 from ..models import ContactOption, County, Province, Question
+from ..services.form_template import contacts_for_form, questions_for_form
 from ..utils.jalali import gregorian_to_jalali, jalali_to_gregorian, parse_jalali_str
 from ..utils.national_code import normalize_national_code
 
@@ -33,6 +35,14 @@ def validate_survey_payload(db: SessionLocal, data: dict) -> tuple[dict, dict[st
 
     if not isinstance(data, dict):
         return clean, {"_": "داده ارسالی نامعتبر است."}
+
+    # ── فرم مبدا (تلفنی / فردی / ...) ──
+    raw_form = str(data.get("form_key") or "").strip()
+    form = form_by_key(raw_form)
+    if form is None:
+        raw_form = DEFAULT_FORM_KEY
+        form = form_by_key(raw_form)
+    clean["form_key"] = form["key"]
 
     # ── نام و نام خانوادگی ──
     first_name = (data.get("first_name") or "").strip()
@@ -138,22 +148,21 @@ def validate_survey_payload(db: SessionLocal, data: dict) -> tuple[dict, dict[st
     else:
         clean["service_date"] = ""
 
-    # ── وضعیت تماس ──
+    # ── وضعیت تماس — باید به همین فرم تعلق داشته باشد ──
     contact_id = data.get("contact_option_id")
     try:
         contact_id = int(contact_id)
     except (TypeError, ValueError):
         contact_id = None
-    contact = db.get(ContactOption, contact_id) if contact_id else None
-    if contact is None or not contact.is_active:
+    form_contacts = contacts_for_form(db, clean["form_key"])
+    contact = next((c for c in form_contacts if c.id == contact_id), None)
+    if contact is None:
         errors["contact_option_id"] = "وضعیت تماس را انتخاب کنید."
     clean["contact_option_id"] = contact.id if contact else None
     clean["contact_requires_answers"] = bool(contact.requires_answers) if contact else True
 
-    # ── پاسخ‌های جدول نظرسنجی ──
-    active_questions = db.scalars(
-        select(Question).where(Question.is_active.is_(True)).order_by(Question.display_order, Question.id)
-    ).all()
+    # ── پاسخ‌های جدول نظرسنجی — فقط سؤال‌های همین فرم ──
+    active_questions = questions_for_form(db, clean["form_key"])
     raw_answers = data.get("answers")
     if not isinstance(raw_answers, list):
         raw_answers = []

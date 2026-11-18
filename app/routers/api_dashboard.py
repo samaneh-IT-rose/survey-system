@@ -14,6 +14,9 @@ router = APIRouter(prefix="/api/dashboard", tags=["dashboard"], dependencies=[De
 @router.get("")
 def dashboard(
     q: str | None = None,
+    form: str | None = None,
+    counselor: str | None = None,
+    service_type: str | None = None,
     province_id: int | None = None,
     county_id: int | None = None,
     contact_option_id: int | None = None,
@@ -24,6 +27,9 @@ def dashboard(
     return build_dashboard(
         db,
         q=q,
+        form=form,
+        counselor=counselor,
+        service_type=service_type,
         province_id=province_id,
         county_id=county_id,
         contact_option_id=contact_option_id,

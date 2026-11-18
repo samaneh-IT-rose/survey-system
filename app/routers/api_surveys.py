@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from ..auth import api_require_perm
 from ..constants import PERM_DELETE, PERM_EDIT, PERM_EXPORT, PERM_VIEW, RATING_LABEL_TO_SCORE
 from ..database import get_db
+from ..forms_registry import DEFAULT_FORM_KEY, form_by_key, form_title
 from ..models import Survey, SurveyAnswer, User
 from ..services.validation import validate_survey_payload
 from ..utils.activity import log_activity
@@ -35,6 +36,8 @@ def serialize_survey(s: Survey) -> dict:
     co = s.contact_option
     return {
         "id": s.id,
+        "form_key": s.form_key or DEFAULT_FORM_KEY,
+        "form_title": form_title(s.form_key),
         "first_name": s.first_name,
         "last_name": s.last_name,
         "national_code": s.national_code,
@@ -115,6 +118,7 @@ def create_survey(payload: dict, request: Request, user: User = Depends(api_requ
         county_id=clean["county_id"],
         survey_date=clean["survey_date"],
         contact_option_id=clean["contact_option_id"],
+        form_key=clean["form_key"],
         counselor=clean.get("counselor", ""),
         service_type=clean.get("service_type", ""),
         service_date=clean.get("service_date", ""),
@@ -137,6 +141,9 @@ def create_survey(payload: dict, request: Request, user: User = Depends(api_requ
 @router.get("")
 def list_surveys(
     q: str | None = None,
+    form: str | None = None,
+    counselor: str | None = None,
+    service_type: str | None = None,
     province_id: int | None = None,
     county_id: int | None = None,
     contact_option_id: int | None = None,
@@ -151,6 +158,8 @@ def list_surveys(
     page = max(1, page)
 
     stmt = select(Survey)
+    if form:
+        stmt = stmt.where(Survey.form_key == form)
     if q:
         needle = f"%{q.strip()}%"
         stmt = stmt.where(
@@ -167,6 +176,10 @@ def list_surveys(
         stmt = stmt.where(Survey.county_id == county_id)
     if contact_option_id:
         stmt = stmt.where(Survey.contact_option_id == contact_option_id)
+    if counselor:
+        stmt = stmt.where(Survey.counselor == counselor.strip())
+    if service_type:
+        stmt = stmt.where(Survey.service_type == service_type.strip())
 
     pf = parse_jalali_str(date_from or "")
     if pf:
@@ -194,10 +207,38 @@ def list_surveys(
     }
 
 
+@router.get("/facets")
+def survey_facets(
+    form: str | None = None,
+    user: User = Depends(api_require_perm(PERM_VIEW)),
+    db: Session = Depends(get_db),
+):
+    """مقادیر مجزا برای فیلترهای «مشاور» و «خدمات» — با فیلتر اختیاری فرم."""
+    stmt = select(Survey.counselor).distinct()
+    if form:
+        stmt = stmt.where(Survey.form_key == form)
+    counselors = [
+        v for v in db.scalars(stmt).all() if v and str(v).strip()
+    ]
+    stmt2 = select(Survey.service_type).distinct()
+    if form:
+        stmt2 = stmt2.where(Survey.form_key == form)
+    services = [
+        v for v in db.scalars(stmt2).all() if v and str(v).strip()
+    ]
+    return {
+        "counselors": sorted(counselors),
+        "service_types": sorted(services),
+    }
+
+
 @router.get("/export/excel")
 def export_excel(
     request: Request,
     q: str | None = None,
+    form: str | None = None,
+    counselor: str | None = None,
+    service_type: str | None = None,
     province_id: int | None = None,
     county_id: int | None = None,
     contact_option_id: int | None = None,
@@ -211,6 +252,9 @@ def export_excel(
 
     filters = dict(
         q=q,
+        form=form,
+        counselor=counselor,
+        service_type=service_type,
         province_id=province_id,
         county_id=county_id,
         contact_option_id=contact_option_id,
@@ -241,6 +285,10 @@ def update_survey(survey_id: int, payload: dict, request: Request, user: User = 
     s = db.get(Survey, survey_id)
     if s is None:
         raise HTTPException(status_code=404, detail={"message": "رکورد یافت نشد."})
+    # ویرایش همیشه با فرمِ خودِ رکورد اعتبارسنجی می‌شود؛ فرم رکورد قابل تغییر نیست
+    if not payload.get("form_key"):
+        payload = dict(payload)
+        payload["form_key"] = s.form_key or DEFAULT_FORM_KEY
     clean, errors = validate_survey_payload(db, payload)
     if errors:
         raise HTTPException(status_code=422, detail={"message": "اطلاعات فرم معتبر نیست.", "errors": errors})
@@ -253,6 +301,7 @@ def update_survey(survey_id: int, payload: dict, request: Request, user: User = 
     s.county_id = clean["county_id"]
     s.survey_date = clean["survey_date"]
     s.contact_option_id = clean["contact_option_id"]
+    # فرم رکورد در ویرایش تغییر نمی‌کند (رکورد متعلق به فرم ثبت خودش می‌ماند)
     s.counselor = clean.get("counselor", "")
     s.service_type = clean.get("service_type", "")
     s.service_date = clean.get("service_date", "")

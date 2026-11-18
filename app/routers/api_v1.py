@@ -152,6 +152,7 @@ def v1_create_survey(payload: dict, key: ApiKey = Depends(current_api_key), db: 
         county_id=clean["county_id"],
         survey_date=clean["survey_date"],
         contact_option_id=clean["contact_option_id"],
+        form_key=clean["form_key"],
     )
     db.add(survey)
     db.flush()

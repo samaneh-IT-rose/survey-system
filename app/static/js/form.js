@@ -173,7 +173,8 @@
       var sel = document.querySelector('input[name="q' + q.id + '"]:checked');
       if (sel) answers.push({ question_id: q.id, value: sel.value });
     });
-    return {
+    var payload = {
+      form_key: boot.formKey || "tel",
       first_name: $("first_name").value,
       last_name: $("last_name").value,
       national_code: window.S.toEnDigits($("national_code").value).trim(),
@@ -185,12 +186,17 @@
       counselor: $("counselor").value.trim(),
       service_type: $("service_type").value.trim(),
       service_date: getDateStr("s"),
-      /* نقاط قوت/پیشنهاد بهبود در فرم «مشاورهٔ فردی» نیست؛ ارسال نمی‌شوند تا
-         مقدار قدیمی رکوردهای تلفنی هنگام ویرایش سرنشین بماند (PATCH حفظ می‌کند) */
       supervisor_name: $("supervisor_name").value.trim(),
       supervisor_signature: $("supervisor_signature").value.trim(),
       answers: answers
     };
+    /* نقاط قوت/پیشنهاد بهبود فقط در فرم تلفنی هستند؛ در فرم فردی ارسال نمی‌شوند تا
+       مقدار قدیمی رکوردهای تلفنی هنگام ویرایش سرنشین بماند (PATCH حفظ می‌کند) */
+    if ($("strengths")) payload.strengths = $("strengths").value.trim();
+    if ($("strengths_extra")) payload.strengths_extra = $("strengths_extra").value.trim();
+    if ($("improvement")) payload.improvement = $("improvement").value.trim();
+    if ($("improvement_extra")) payload.improvement_extra = $("improvement_extra").value.trim();
+    return payload;
   }
 
   function fillForm(rec) {
@@ -208,6 +214,11 @@
       return loadCounties(rec.province.id, rec.county.id);
     });
     setDateStr(rec.survey_date_jalali);
+    /* نقاط قوت/پیشنهاد بهبود — فقط در فرم تلفنی این فیلدها در صفحه هستند */
+    if (rec.strengths !== undefined && $("strengths")) $("strengths").value = rec.strengths || "";
+    if (rec.strengths_extra !== undefined && $("strengths_extra")) $("strengths_extra").value = rec.strengths_extra || "";
+    if (rec.improvement !== undefined && $("improvement")) $("improvement").value = rec.improvement || "";
+    if (rec.improvement_extra !== undefined && $("improvement_extra")) $("improvement_extra").value = rec.improvement_extra || "";
     if (rec.contact_option) {
       var r = document.querySelector('input[name="contact_option_id"][value="' + rec.contact_option.id + '"]');
       if (!r && rec.contact_option.text) {
@@ -232,9 +243,14 @@
   async function loadRecord(id) {
     try {
       var rec = await window.S.fetchJSON(API("/surveys/" + id));
+      /* رکورد متعلق به فرم دیگری است — به صفحهٔ ثبت همان فرم می‌رویم */
+      if (boot.formKey && rec.form_key && rec.form_key !== boot.formKey) {
+        window.location.replace((window.__PREFIX__ || "/app") + "/form/" + rec.form_key + "?id=" + rec.id);
+        return;
+      }
       fillForm(rec);
       recordId = rec.id;
-      $("formTitle").textContent = "ویرایش فرم نظرسنجی — رکورد " + window.S.faNum(rec.id);
+      $("formTitle").textContent = "ویرایش " + (boot.formTitle || "فرم نظرسنجی") + " — رکورد " + window.S.faNum(rec.id);
       $("editBadge").innerHTML = "در حال ویرایش رکورد شماره <bdi>" + rec.id + "</bdi>؛ پس از ذخیره، تغییرات جایگزین می‌شود.";
     } catch (e) {
       window.S.toast(e.message, "err");
@@ -250,7 +266,7 @@
     refreshRatingLock();
     recordId = null;
     dirty = false;
-    $("formTitle").textContent = "ثبت فرم نظرسنجی";
+    $("formTitle").textContent = "ثبت " + (boot.formTitle || "فرم نظرسنجی");
     $("editBadge").textContent = "";
     var t = boot.todayJalali || "";
     if (t) setDateStr(t);
