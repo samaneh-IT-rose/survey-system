@@ -8,14 +8,17 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from ..auth import api_admin
+from ..auth import api_admin, api_require_perm
+from ..constants import PERM_VIEW
 from ..database import get_db
 from ..forms_registry import form_by_key
 from ..models import ContactOption, Question, User
 from ..services.form_template import contacts_for_form, questions_for_form
 from ..utils.activity import log_activity
 
-router = APIRouter(prefix="/api/template", tags=["template"], dependencies=[Depends(api_admin)])
+# توجه: گارد «مدیر سامانه» فقط روی نقاط نوشتن (POST/PATCH) است؛ نقاط خواندن
+# با مجوز «مشاهده» باز هستند تا فیلترهای آرشیو/داشبورد برای کاربران غیرمدیر هم کار کند.
+router = APIRouter(prefix="/api/template", tags=["template"])
 
 
 def _form_or_404(form: str | None) -> str:
@@ -41,7 +44,11 @@ def serialize_contact(c: ContactOption) -> dict:
 
 
 @router.get("/questions")
-def list_questions(form: str | None = None, db: Session = Depends(get_db)):
+def list_questions(
+    form: str | None = None,
+    user: User = Depends(api_require_perm(PERM_VIEW)),
+    db: Session = Depends(get_db),
+):
     key = _form_or_404(form)
     # همهٔ ردیف‌های فرم (فعال و غیرفعال) برای مدیریت الگو
     rows = questions_for_form(db, key, active_only=False)
@@ -152,7 +159,11 @@ def bulk_questions(payload: dict, request: Request, user: User = Depends(api_adm
 
 
 @router.get("/contact-options")
-def list_contacts(form: str | None = None, db: Session = Depends(get_db)):
+def list_contacts(
+    form: str | None = None,
+    user: User = Depends(api_require_perm(PERM_VIEW)),
+    db: Session = Depends(get_db),
+):
     # بدون فرم (مثلاً برای فیلتر آرشیو): همهٔ وضعیت‌های فعال همهٔ فرم‌ها بدون تکرار
     if not form:
         rows = db.scalars(
