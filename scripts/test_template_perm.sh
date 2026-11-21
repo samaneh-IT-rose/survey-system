@@ -11,14 +11,14 @@ export SURVEY_SELF_URL="http://127.0.0.1:3010"
 LOG="$APP_DIR/logs/test-server.log"
 
 rm -f data/test_tplperm.db
-/home/z/.venv/bin/python3 -c "
+/home/z/my-project/venv/bin/python3 -c "
 from app.database import Base, engine
 import app.models  # noqa
 Base.metadata.create_all(engine)
 print('tables ok')"
-/home/z/.venv/bin/python3 scripts/seed.py | tail -1
+/home/z/my-project/venv/bin/python3 scripts/seed.py | tail -1
 
-/home/z/.venv/bin/python3 -m uvicorn app.main:app --host 127.0.0.1 --port 3010 --log-level warning >> "$LOG" 2>&1 &
+/home/z/my-project/venv/bin/python3 -m uvicorn app.main:app --host 127.0.0.1 --port 3010 --log-level warning >> "$LOG" 2>&1 &
 SRV=$!
 trap 'kill $SRV 2>/dev/null' EXIT
 
@@ -50,7 +50,7 @@ R=$RANDOM
 curl -s -b "$CA" -X POST "$B/api/users" -H 'Content-Type: application/json' \
   -d "{\"username\":\"de$R\",\"full_name\":\"ورود داده\",\"role\":\"data_entry\",\"level\":\"user\",\"password\":\"De#12345\"}" \
   -o /tmp/tpl_u.json
-DE=$(/home/z/.venv/bin/python3 -c "import json; print(json.load(open('/tmp/tpl_u.json'))['record']['username'])")
+DE=$(/home/z/my-project/venv/bin/python3 -c "import json; print(json.load(open('/tmp/tpl_u.json'))['record']['username'])")
 
 CD=/tmp/tpl_de.txt; rm -f "$CD"
 LOC=$(curl -s -c "$CD" -o /dev/null -w "%{redirect_url}" -X POST "$B/login" --data "username=$DE&password=De#12345")

@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from ..auth import api_require_perm
 from ..constants import PERM_VIEW
 from ..database import get_db
+from ..models import User
 from ..services.dashboard import build_dashboard
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"], dependencies=[Depends(api_require_perm(PERM_VIEW))])
@@ -22,10 +23,12 @@ def dashboard(
     contact_option_id: int | None = None,
     date_from: str | None = None,
     date_to: str | None = None,
+    user: User = Depends(api_require_perm(PERM_VIEW)),
     db: Session = Depends(get_db),
 ):
     return build_dashboard(
         db,
+        user=user,
         q=q,
         form=form,
         counselor=counselor,

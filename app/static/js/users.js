@@ -1,4 +1,4 @@
-/* مدیریت کاربران — فقط مدیر سامانه: سطح کاربری، نقش و سطوح دسترسی */
+/* مدیریت کاربران — سطح کاربری، نقش‌ها، سطوح دسترسی، فرم‌های مجاز */
 (function () {
   var T = document.getElementById("usersTable").querySelector("tbody");
   var modal = document.getElementById("userModal");
@@ -9,16 +9,24 @@
     print: "چاپ و PDF",
     export: "خروجی اکسل",
     delete: "حذف رکورد",
+    own_data: "فقط داده‌های خودش",
   };
-  // دسترسی‌های پیش‌فرض هر نقش — هماهنگ با سرور
-  var ROLE_DEFAULTS = {
-    admin: ["view", "edit", "print", "export", "delete"],
-    operator: ["view", "edit", "print", "export"],
-    data_entry: ["view", "edit", "print"],
-    supervisor: ["view", "edit", "print"],
-    reporter: ["view", "print", "export"],
-    viewer: ["view"],
-  };
+  var FORM_TITLES = {};
+  document.querySelectorAll("#u_forms input[type=checkbox]").forEach(function (cb) {
+    FORM_TITLES[cb.value] = cb.parentNode.textContent.trim();
+  });
+
+  // نقش‌ها و دسترسی‌های پیش‌فرض — از سرور (جدول roles، شامل نقش‌های سفارشی)
+  var ROLES = window.__ROLES__ || [];
+  var ROLE_DEFAULTS = {};
+  var ROLE_IS_SYSTEM = {};
+  ROLES.forEach(function (r) {
+    ROLE_DEFAULTS[r.key] = r.permissions || ["view"];
+    ROLE_IS_SYSTEM[r.key] = !!r.is_system;
+  });
+  function roleDefaults(role) {
+    return ROLE_DEFAULTS[role] || ["view"];
+  }
 
   function faDate(iso) {
     if (!iso) return "—";
@@ -32,6 +40,14 @@
     }).join(" ");
   }
 
+  function formsCell(u) {
+    if (u.level === "admin") return "<span class='muted'>همهٔ فرم‌ها</span>";
+    if (!u.allowed_forms || !u.allowed_forms.length) return "<span class='muted'>همهٔ فرم‌ها</span>";
+    return u.allowed_forms.map(function (k) {
+      return "<span class='permchip'>" + (FORM_TITLES[k] || k) + "</span>";
+    }).join(" ");
+  }
+
   function row(u) {
     var tr = document.createElement("tr");
     tr.innerHTML =
@@ -39,8 +55,8 @@
       "<td>" + u.full_name + "</td>" +
       "<td dir='ltr'>" + u.username + "</td>" +
       "<td><span class='levelbadge level-" + u.level + "'>" + u.level_label + "</span></td>" +
-      "<td><span class='rolebadge role-" + u.role + "'>" + u.role_label + "</span></td>" +
-      "<td class='permcell'>" + permChips(u.effective_permissions) + "</td>" +
+      "<td><span class='rolebadge'>" + u.role_label + "</span></td>" +
+      "<td class='permcell'>" + permChips(u.effective_permissions) + "<div class='muted' style='margin-top:4px;font-size:11px'>فرم‌ها: " + formsCell(u) + "</div></td>" +
       "<td>" + (u.is_active ? "<span class='badge ok'>فعال</span>" : "<span class='badge off'>غیرفعال</span>") + "</td>" +
       "<td>" + faDate(u.last_login_at) + "</td>" +
       "<td class='actions'></td>";
@@ -92,28 +108,37 @@
     }).catch(function (e) { S.toast(e.message, "error"); });
   }
 
-  function checkedPerms() {
+  function checkedBoxes(containerId) {
     var out = [];
-    document.querySelectorAll("#u_perms input[type=checkbox]").forEach(function (cb) {
+    document.querySelectorAll("#" + containerId + " input[type=checkbox]").forEach(function (cb) {
       if (cb.checked) out.push(cb.value);
     });
     return out;
   }
 
-  function setCheckedPerms(perms) {
-    document.querySelectorAll("#u_perms input[type=checkbox]").forEach(function (cb) {
-      cb.checked = perms.indexOf(cb.value) !== -1;
+  function setCheckedBoxes(containerId, values) {
+    document.querySelectorAll("#" + containerId + " input[type=checkbox]").forEach(function (cb) {
+      cb.checked = (values || []).indexOf(cb.value) !== -1;
     });
   }
+
+  function checkedPerms() { return checkedBoxes("u_perms"); }
+  function setCheckedPerms(perms) { setCheckedBoxes("u_perms", perms); }
+  function checkedForms() { return checkedBoxes("u_forms"); }
+  function setCheckedForms(forms) { setCheckedBoxes("u_forms", forms); }
 
   function applyLevelUi() {
     var isAdmin = document.getElementById("u_level").value === "admin";
     document.querySelectorAll("#u_perms input[type=checkbox]").forEach(function (cb) {
       cb.disabled = isAdmin;
     });
+    document.querySelectorAll("#u_forms input[type=checkbox]").forEach(function (cb) {
+      cb.disabled = isAdmin;
+      if (isAdmin) cb.checked = true; // مدیر همهٔ فرم‌ها را می‌بیند
+    });
     document.getElementById("u_level_hint").textContent = isAdmin
-      ? "مدیر سامانه به همهٔ بخش‌ها از جمله مدیریت کاربران دسترسی دارد."
-      : "کاربر سامانه فقط بر اساس نقش و سطوح دسترسی وارد می‌شود.";
+      ? "مدیر سامانه به همهٔ بخش‌ها و همهٔ فرم‌ها دسترسی دارد."
+      : "کاربر سامانه فقط بر اساس نقش، دسترسی‌ها و فرم‌های مجاز وارد می‌شود.";
   }
 
   function openModal(u) {
@@ -130,8 +155,10 @@
     if (isEdit && u.permissions && u.permissions.length) {
       setCheckedPerms(u.permissions);
     } else {
-      setCheckedPerms(ROLE_DEFAULTS[isEdit ? u.role : "operator"] || ["view"]);
+      setCheckedPerms(roleDefaults(isEdit ? u.role : "operator"));
     }
+    // فرم‌های مجاز — خالی یعنی همه
+    setCheckedForms(isEdit ? (u.allowed_forms || []) : []);
     var pw = document.getElementById("u_password");
     if (isEdit) {
       pw.value = "";
@@ -155,14 +182,14 @@
       setCheckedPerms(Object.keys(PERM_LABELS));
     } else {
       var role = document.getElementById("u_role").value;
-      setCheckedPerms(ROLE_DEFAULTS[role] || ["view"]);
+      setCheckedPerms(roleDefaults(role));
     }
     applyLevelUi();
   });
 
   document.getElementById("u_role").addEventListener("change", function () {
     if (document.getElementById("u_level").value === "admin") return;
-    setCheckedPerms(ROLE_DEFAULTS[this.value] || ["view"]);
+    setCheckedPerms(roleDefaults(this.value));
   });
 
   document.getElementById("userForm").onsubmit = function (ev) {
@@ -173,6 +200,7 @@
       role: document.getElementById("u_role").value,
       level: document.getElementById("u_level").value,
       permissions: checkedPerms(),
+      allowed_forms: checkedForms(),
     };
     var pw = document.getElementById("u_password").value;
     var p;

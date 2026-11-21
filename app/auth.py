@@ -44,6 +44,10 @@ def _load_user(request: Request, db: Session) -> User | None:
     user = db.get(User, uid)
     if user is None or not user.is_active:
         return None
+    # ردیف نقش از جدول roles (سیستمی/سفارشی) — برای برچسب و دسترسی‌های پیش‌فرض نقش
+    from .services.roles import attach_role
+
+    attach_role(user, db)
     return user
 
 

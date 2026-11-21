@@ -108,6 +108,9 @@ class Survey(Base):
     )
     # کدام فرم ثبت این رکورد را ساخته؟ (tel / individual / ...) — رکوردهای قدیمی تلفنی‌اند
     form_key: Mapped[str] = mapped_column(String(20), nullable=False, default="tel", server_default="tel", index=True)
+    # ثبت‌کنندهٔ رکورد — برای قید «فقط داده‌های خودش»؛ رکوردهای قدیمی NULL هستند
+    # و برای همهٔ کاربران دارای مجوز مشاهده دیده می‌شوند
+    created_by: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
 
     # ── فیلدهای فرم نمونه (همه اختیاری؛ برای رکوردهای قدیمی رشتهٔ خالی) ──
     # مشاور
@@ -191,6 +194,8 @@ class User(Base):
     level: Mapped[str] = mapped_column(String(20), nullable=False, default="user", server_default="user")
     # سطوح دسترسی به‌صورت «view,edit,print,export,delete» — خالی یعنی پیش‌فرض نقش
     permissions: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
+    # فرم‌های مجاز برای این کاربر به‌صورت «tel,individual» — خالی یعنی همهٔ فرم‌های فعال
+    allowed_forms: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     # اگر True باشد، کاربر تا تغییر رمز به هیچ صفحه‌ای جز تغییر رمز راه ندارد
     must_change_password: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
@@ -207,11 +212,19 @@ class User(Base):
 
     @property
     def role_label(self) -> str:
+        rr = getattr(self, "_role_row", None)
+        if rr is not None:
+            return rr.name
         return ROLE_LABELS.get(self.role, self.role)
 
     @property
     def level_label(self) -> str:
         return LEVEL_LABELS.get(self.level, self.level)
+
+    @property
+    def allowed_form_keys(self) -> list[str]:
+        """فهرست فرم‌های مجاز کاربر از ستون CSV — خالی یعنی همه."""
+        return [k.strip() for k in (self.allowed_forms or "").split(",") if k.strip()]
 
     @property
     def permission_keys(self) -> list[str]:
@@ -220,11 +233,40 @@ class User(Base):
 
     @property
     def effective_permissions(self) -> list[str]:
-        """دسترسی‌های نهایی — با منطق سطح/نقش/دسترسی‌های صریح."""
-        return effective_permissions(self.level, self.role, self.permissions)
+        """دسترسی‌های نهایی — با نقش تعریف‌شده در جدول roles یا پیش‌فرض ثابت‌ها."""
+        rr = getattr(self, "_role_row", None)
+        role_perms = parse_permissions(rr.permissions) if rr is not None else None
+        return effective_permissions(self.level, self.role, self.permissions, role_perms)
 
     def has_perm(self, perm: str) -> bool:
         return perm in self.effective_permissions
+
+
+class Role(Base):
+    """نقش کاربران — قابل تعریف توسط مدیر سامانه (نسخهٔ 1.6.0).
+
+    نقش‌های سیستمی شش‌گانه در استارت برنامه seed می‌شوند و قابل حذف نیستند؛
+    مدیر می‌تواند نقش سفارشی بسازد، ویرایش کند و به کاربران نسبت دهد.
+    کلید نقش روی ستون role جدول users ذخیره می‌شود:
+      - نقش‌های سیستمی: کلیدهای قدیمی (admin, operator, data_entry, ...)
+      - نقش‌های سفارشی: کلید خودکار «role_<id>»
+    """
+
+    __tablename__ = "roles"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    # کلید یکتا که در ستون role جدول users ذخیره می‌شود
+    key: Mapped[str] = mapped_column(String(40), unique=True, nullable=False, index=True)
+    # نام نمایشی نقش
+    name: Mapped[str] = mapped_column(String(80), nullable=False)
+    description: Mapped[str] = mapped_column(String(200), nullable=False, default="", server_default="")
+    # سطح پیشنهادی کاربر برای این نقش: admin یا user
+    level: Mapped[str] = mapped_column(String(20), nullable=False, default="user", server_default="user")
+    # دسترسی‌های پیش‌فرض نقش — خالی یعنی فقط خواندنی
+    permissions: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
+    is_system: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    display_order: Mapped[int] = mapped_column(Integer, nullable=False, default=100, server_default="100")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_now_tz)
 
 
 class ApiKey(Base):

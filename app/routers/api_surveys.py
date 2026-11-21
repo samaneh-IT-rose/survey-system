@@ -14,6 +14,7 @@ from ..constants import PERM_DELETE, PERM_EDIT, PERM_EXPORT, PERM_VIEW, RATING_L
 from ..database import get_db
 from ..forms_registry import DEFAULT_FORM_KEY, form_by_key, form_title
 from ..models import Survey, SurveyAnswer, User
+from ..services.scope import allowed_form_keys, apply_record_scope, can_view_record
 from ..services.validation import validate_survey_payload
 from ..utils.activity import log_activity
 from ..utils.jalali import gdate_to_jalali_str, jalali_to_gregorian, parse_jalali_str
@@ -105,6 +106,13 @@ def _save_answers(db: Session, survey: Survey, clean: dict) -> None:
 
 @router.post("")
 def create_survey(payload: dict, request: Request, user: User = Depends(api_require_perm(PERM_EDIT)), db: Session = Depends(get_db)):
+    # اگر مدیر برای کاربر «فرم‌های مجاز» تعیین کرده، ثبت فرم دیگر پیش از هر
+    # اعتبارسنجی رد می‌شود تا اطلاعاتی دربارهٔ فرم غیرمجاز فاش نشود
+    allowed = allowed_form_keys(user)
+    raw_form_key = str(payload.get("form_key") or DEFAULT_FORM_KEY)
+    if allowed is not None and raw_form_key not in allowed:
+        raise HTTPException(status_code=403, detail={"message": "شما اجازهٔ ثبت این نوع فرم را ندارید."})
+
     clean, errors = validate_survey_payload(db, payload)
     if errors:
         raise HTTPException(status_code=422, detail={"message": "اطلاعات فرم معتبر نیست.", "errors": errors})
@@ -119,6 +127,7 @@ def create_survey(payload: dict, request: Request, user: User = Depends(api_requ
         survey_date=clean["survey_date"],
         contact_option_id=clean["contact_option_id"],
         form_key=clean["form_key"],
+        created_by=user.id,
         counselor=clean.get("counselor", ""),
         service_type=clean.get("service_type", ""),
         service_date=clean.get("service_date", ""),
@@ -158,6 +167,8 @@ def list_surveys(
     page = max(1, page)
 
     stmt = select(Survey)
+    # قیدهای سراسری: «فقط داده‌های خودش» + فرم‌های مجاز کاربر
+    stmt = apply_record_scope(stmt, user)
     if form:
         stmt = stmt.where(Survey.form_key == form)
     if q:
@@ -213,14 +224,18 @@ def survey_facets(
     user: User = Depends(api_require_perm(PERM_VIEW)),
     db: Session = Depends(get_db),
 ):
-    """مقادیر مجزا برای فیلترهای «مشاور» و «خدمات» — با فیلتر اختیاری فرم."""
-    stmt = select(Survey.counselor).distinct()
+    """مقادیر مجزا برای فیلترهای «مشاور» و «خدمات» — با فیلتر اختیاری فرم.
+
+    با قیدهای دسترسی کاربر هم محدود می‌شود تا مقداری از رکوردهایی که
+    کاربر حق دیدنشان را ندارد فاش نشود.
+    """
+    stmt = apply_record_scope(select(Survey.counselor).distinct(), user)
     if form:
         stmt = stmt.where(Survey.form_key == form)
     counselors = [
         v for v in db.scalars(stmt).all() if v and str(v).strip()
     ]
-    stmt2 = select(Survey.service_type).distinct()
+    stmt2 = apply_record_scope(select(Survey.service_type).distinct(), user)
     if form:
         stmt2 = stmt2.where(Survey.form_key == form)
     services = [
@@ -261,7 +276,7 @@ def export_excel(
         date_from=date_from,
         date_to=date_to,
     )
-    content, filename = build_excel(db, filters)
+    content, filename = build_excel(db, filters, user=user)
     log_activity(db, request, user, "excel_export", f"خروجی {filename}")
 
     return Response(
@@ -276,6 +291,8 @@ def get_survey(survey_id: int, user: User = Depends(api_require_perm(PERM_VIEW))
     s = db.get(Survey, survey_id)
     if s is None:
         raise HTTPException(status_code=404, detail={"message": "رکورد یافت نشد."})
+    if not can_view_record(user, s):
+        raise HTTPException(status_code=403, detail={"message": "این رکورد در محدودهٔ دسترسی شما نیست."})
     return serialize_survey(s)
 
 
@@ -285,6 +302,8 @@ def update_survey(survey_id: int, payload: dict, request: Request, user: User = 
     s = db.get(Survey, survey_id)
     if s is None:
         raise HTTPException(status_code=404, detail={"message": "رکورد یافت نشد."})
+    if not can_view_record(user, s):
+        raise HTTPException(status_code=403, detail={"message": "این رکورد در محدودهٔ دسترسی شما نیست."})
     # ویرایش همیشه با فرمِ خودِ رکورد اعتبارسنجی می‌شود؛ فرم رکورد قابل تغییر نیست
     if not payload.get("form_key"):
         payload = dict(payload)
@@ -326,6 +345,8 @@ def delete_survey(survey_id: int, request: Request, user: User = Depends(api_req
     s = db.get(Survey, survey_id)
     if s is None:
         raise HTTPException(status_code=404, detail={"message": "رکورد یافت نشد."})
+    if not can_view_record(user, s):
+        raise HTTPException(status_code=403, detail={"message": "این رکورد در محدودهٔ دسترسی شما نیست."})
     detail = f"رکورد {survey_id} — {s.first_name} {s.last_name}"
     db.delete(s)
     db.commit()

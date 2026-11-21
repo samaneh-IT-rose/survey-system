@@ -45,6 +45,8 @@ router = APIRouter(prefix=APP_PREFIX, tags=["pages"])
 
 
 def _ctx(user: User | None = None, **extra):
+    from ..services.scope import user_forms
+
     ctx = {
         "app_title": APP_TITLE,
         "org_name": ORG_NAME,
@@ -53,7 +55,8 @@ def _ctx(user: User | None = None, **extra):
         "prefix": APP_PREFIX,
         "asset": _asset_url,
         "user": user,
-        "forms": enabled_forms(),  # منوی «فرم‌های نظرسنجی» — از forms_registry
+        # منوی «فرم‌های نظرسنجی» — فقط فرم‌هایی که این کاربر اجازهٔ دیدنشان را دارد
+        "forms": user_forms(user),
     }
     ctx.update(extra)
     return ctx
@@ -82,6 +85,12 @@ def form_page(form_key: str, request: Request, user: User = Depends(page_require
     form = form_by_key(form_key)
     if form is None:
         raise HTTPException(404, detail="فرم نظرسنجی یافت نشد.")
+    # اگر مدیر برای کاربر «فرم‌های مجاز» تعیین کرده، این فرم برایش باز نمی‌شود
+    from ..services.scope import allowed_form_keys
+
+    allowed = allowed_form_keys(user)
+    if allowed is not None and form["key"] not in allowed:
+        raise HTTPException(403, detail="به این نوع فرم دسترسی ندارید.")
 
     questions = questions_for_form(db, form["key"])
     contacts = contacts_for_form(db, form["key"])
@@ -119,8 +128,10 @@ def template_page(request: Request, user: User = Depends(page_admin)):
 
 
 @router.get("/users", response_class=HTMLResponse)
-def users_page(request: Request, user: User = Depends(page_admin)):
-    from ..constants import LEVEL_LABELS, PERMISSIONS, ROLE_DEFAULT_PERMS, ROLE_DESCRIPTIONS, ROLE_LABELS, VALID_LEVELS, VALID_ROLES
+def users_page(request: Request, user: User = Depends(page_admin), db: Session = Depends(get_db)):
+    from ..constants import LEVEL_LABELS, PERMISSIONS
+    from ..forms_registry import enabled_forms
+    from ..services.roles import list_roles, serialize_role
 
     return templates.TemplateResponse(
         request,
@@ -128,17 +139,29 @@ def users_page(request: Request, user: User = Depends(page_admin)):
         _ctx(
             user,
             page_title="مدیریت کاربران",
-            levels=[{"value": lv, "label": LEVEL_LABELS[lv]} for lv in VALID_LEVELS],
-            roles=[
-                {
-                    "value": role,
-                    "label": ROLE_LABELS[role],
-                    "description": ROLE_DESCRIPTIONS[role],
-                    "default_permissions": list(ROLE_DEFAULT_PERMS[role]),
-                }
-                for role in VALID_ROLES
-            ],
+            levels=[{"value": lv, "label": LEVEL_LABELS[lv]} for lv in ("admin", "user")],
+            # نقش‌ها از جدول roles — شامل نقش‌های سفارشی هم می‌شود
+            roles=[serialize_role(db, r) for r in list_roles(db)],
             permissions=[{"value": key, "label": label} for key, label in PERMISSIONS],
+            forms=enabled_forms(),  # برای گزینه‌های «فرم‌های مجاز» کاربر
+        ),
+    )
+
+
+@router.get("/roles", response_class=HTMLResponse)
+def roles_page(request: Request, user: User = Depends(page_admin), db: Session = Depends(get_db)):
+    from ..constants import LEVEL_LABELS, PERMISSIONS
+    from ..services.roles import list_roles, serialize_role
+
+    return templates.TemplateResponse(
+        request,
+        "roles.html",
+        _ctx(
+            user,
+            page_title="مدیریت نقش‌ها",
+            levels=[{"value": lv, "label": LEVEL_LABELS[lv]} for lv in ("admin", "user")],
+            permissions=[{"value": key, "label": label} for key, label in PERMISSIONS],
+            roles=[serialize_role(db, r) for r in list_roles(db)],
         ),
     )
 
@@ -162,6 +185,10 @@ def print_page(survey_id: int, request: Request, user: User = Depends(page_requi
     s = db.get(Survey, survey_id)
     if s is None:
         raise HTTPException(404, detail="رکورد یافت نشد.")
+    from ..services.scope import can_view_record
+
+    if not can_view_record(user, s):
+        raise HTTPException(403, detail="این رکورد در محدودهٔ دسترسی شما نیست.")
     form_key = s.form_key or DEFAULT_FORM_KEY
     form = form_by_key(form_key)
     # هر فرم قالب چاپ خودش را دارد (عین فایل نمونهٔ همان فرم)

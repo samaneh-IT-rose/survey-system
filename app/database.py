@@ -70,8 +70,10 @@ def ensure_survey_columns(target_engine) -> list[str]:
 USER_NEW_COLUMNS: dict[str, str] = {
     # سطح کاربری: admin (مدیر سامانه) یا user (کاربر سامانه)
     "level": "VARCHAR(20) NOT NULL DEFAULT 'user'",
-    # سطوح دسترسی «view,edit,print,export,delete» — خالی یعنی پیش‌فرض نقش
+    # سطوح دسترسی «view,edit,print,export,delete,own_data» — خالی یعنی پیش‌فرض نقش
     "permissions": "TEXT NOT NULL DEFAULT ''",
+    # فرم‌های مجاز کاربر «tel,individual,group» — خالی یعنی همهٔ فرم‌های فعال
+    "allowed_forms": "TEXT NOT NULL DEFAULT ''",
 }
 
 
@@ -102,6 +104,35 @@ def ensure_schema_updates(target_engine) -> None:
     ensure_survey_columns(target_engine)
     ensure_user_columns(target_engine)
     ensure_form_columns(target_engine)
+    ensure_v160_columns(target_engine)
+
+
+# ---------- مهاجرت نسخهٔ 1.6.0: قید «فقط داده‌های خودش» و فرم‌های مجاز ----------
+V160_NEW_COLUMNS: dict[tuple[str, str], tuple[str, str]] = {
+    # جدول، نام ستون: DDL
+    ("surveys", "created_by"): ("INTEGER", ""),
+}
+
+
+def ensure_v160_columns(target_engine) -> list[str]:
+    """ستون created_by روی surveys برای قید «فقط داده‌های خودش».
+
+    ستون users.allowed_forms از ensure_user_columns اضافه می‌شود؛ رکوردهای
+    قدیمی created_by = NULL دارند و برای همهٔ کاربران دارای مجوز مشاهده دیده
+    می‌شوند تا دادهٔ قبلی از دید کاربران محدودشده حذف نشود.
+    """
+    added: list[str] = []
+    inspector = inspect(target_engine)
+    tables = inspector.get_table_names()
+    with target_engine.begin() as conn:
+        for (table, name), (col_type, extra) in V160_NEW_COLUMNS.items():
+            if table not in tables:
+                continue
+            cols = {c["name"] for c in inspector.get_columns(table)}
+            if name not in cols:
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {col_type} {extra}"))
+                added.append(f"{table}.{name}")
+    return added
 
 
 # ---------- مهاجرت چند-فرمی (نسخهٔ 1.4.0) ----------

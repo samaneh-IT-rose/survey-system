@@ -16,6 +16,7 @@ from .routers import (
     api_keys,
     api_locations,
     api_logs,
+    api_roles,
     api_surveys,
     api_template,
     api_users,
@@ -39,6 +40,10 @@ async def lifespan(app: FastAPI):
 
     with SessionLocal() as _db:
         ensure_form_templates(_db)
+        # نقش‌های سیستمی + سازگاری نقش‌های سفارشی (نسخهٔ 1.6.0)
+        from .services.roles import ensure_roles
+
+        ensure_roles(_db)
     _bootstrap_admin()
     yield
 
@@ -124,6 +129,7 @@ app.include_router(api_surveys.router, prefix=APP_PREFIX)
 app.include_router(api_export.router, prefix=APP_PREFIX)
 app.include_router(api_dashboard.router, prefix=APP_PREFIX)
 app.include_router(api_users.router, prefix=APP_PREFIX)
+app.include_router(api_roles.router, prefix=APP_PREFIX)
 app.include_router(api_logs.router, prefix=APP_PREFIX)
 app.include_router(api_keys.router, prefix=APP_PREFIX)
 app.include_router(api_v1.router, prefix=APP_PREFIX)

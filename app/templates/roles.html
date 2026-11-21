@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+<div data-page="roles"></div>
+{% block title %}مدیریت نقش‌ها — {{ app_title }}{% endblock %}
+{% block content %}
+<div class="pagehead">
+  <h1>مدیریت نقش‌ها</h1>
+  <div>
+    <a class="btn" href="{{ prefix }}/users">مدیریت کاربران</a>
+    <button class="btn primary" id="btnNewRole">+ نقش جدید</button>
+  </div>
+</div>
+
+<div class="card">
+  <table class="datatable" id="rolesTable">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>نام نقش</th>
+        <th>کلید (برای API)</th>
+        <th>سطح کاربری</th>
+        <th>دسترسی‌های پیش‌فرض</th>
+        <th>تعداد کاربران</th>
+        <th>نوع</th>
+        <th>عملیات</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<!-- مودال نقش جدید/ویرایش -->
+<div class="modal-backdrop" id="roleModal" hidden>
+  <div class="modal">
+    <h2 id="roleModalTitle">نقش جدید</h2>
+    <form id="roleForm">
+      <input type="hidden" id="r_id">
+      <label class="field"><span>نام نقش</span>
+        <input type="text" id="r_name" required>
+      </label>
+      <label class="field"><span>توضیح کوتاه</span>
+        <input type="text" id="r_desc">
+      </label>
+      <label class="field"><span>سطح کاربری پیشنهادی</span>
+        <select id="r_level">
+          {% for lv in levels %}
+          <option value="{{ lv.value }}">{{ lv.label }}{% if lv.value == 'admin' %} — همهٔ دسترسی‌ها{% endif %}</option>
+          {% endfor %}
+        </select>
+        <small class="muted">سطح «مدیر سامانه» همهٔ بخش‌ها را باز می‌کند؛ نقش سفارشی معمولاً «کاربر سامانه» است.</small>
+      </label>
+      <div class="field">
+        <span>دسترسی‌های پیش‌فرض نقش</span>
+        <div class="permsgrid" id="r_perms">
+          {% for p in permissions %}
+          <label class="permitem">
+            <input type="checkbox" value="{{ p.value }}"> {{ p.label }}
+          </label>
+          {% endfor %}
+        </div>
+        <small class="muted">وقتی کاربری با این نقش ساخته شود، این دسترسی‌ها تیک می‌خورند و مدیر می‌تواند برای هر کاربر تغییرشان دهد.</small>
+      </div>
+      <div class="modal-actions">
+        <button type="submit" class="btn primary">ذخیره</button>
+        <button type="button" class="btn" id="roleCancel">انصراف</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ asset('static/js/roles.js') }}"></script>{% endblock %}

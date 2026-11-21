@@ -13,6 +13,7 @@ from ..constants import PERM_PRINT
 from ..database import get_db
 from ..models import Survey, User
 from ..services.pdf_export import render_pdf_for_record
+from ..services.scope import can_view_record
 from ..utils.security import SESSION_COOKIE
 
 router = APIRouter(prefix="/api/surveys", tags=["exports"])
@@ -23,6 +24,8 @@ async def survey_pdf(survey_id: int, request: Request, user: User = Depends(api_
     s = db.get(Survey, survey_id)
     if s is None:
         raise HTTPException(404, detail={"message": "رکورد یافت نشد."})
+    if not can_view_record(user, s):
+        raise HTTPException(403, detail={"message": "این رکورد در محدودهٔ دسترسی شما نیست."})
 
     session_cookie = request.cookies.get(SESSION_COOKIE)
     pdf_bytes = await render_pdf_for_record(survey_id, session_cookie=session_cookie)

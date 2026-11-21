@@ -91,10 +91,14 @@ def _satisfaction_counts(db: Session, ids_sub, question_text: str) -> dict:
 
 def build_dashboard(db: Session, *, q=None, province_id=None, county_id=None,
                     contact_option_id=None, date_from=None, date_to=None,
-                    form=None, counselor=None, service_type=None) -> dict:
+                    form=None, counselor=None, service_type=None, user=None) -> dict:
+    from ..services.scope import apply_record_scope
+
     # زیرپرس‌وجوی شناسه رکوردهای فیلترشده — مبنای همه آمارها
+    # + قیدهای دسترسی کاربر: «فقط داده‌های خودش» و فرم‌های مجاز
     ids_sub = _apply_filters(
-        select(Survey.id), q, province_id, county_id, contact_option_id, date_from, date_to,
+        apply_record_scope(select(Survey.id), user) if user is not None else select(Survey.id),
+        q, province_id, county_id, contact_option_id, date_from, date_to,
         form=form, counselor=counselor, service_type=service_type,
     ).subquery()
 
@@ -195,13 +199,23 @@ def build_dashboard(db: Session, *, q=None, province_id=None, county_id=None,
     # ── تحلیل تلفیقی بین‌فرمی — درصد رضایت از خدمات ارائه‌شده ──
     # برای هر فرم فعال: آمار سؤال «رضایت کل» همان فرم + تعداد رکورد؛
     # عدد نهایی = ترکیب وزنی همهٔ فرم‌ها (مجموع راضی‌ها / مجموع پاسخ‌ها)
+    # فقط فرم‌های مجاز کاربر + رکوردهای در محدودهٔ دسترسی او
     per_form_stats = []
-    forms = [form_by_key(form)] if form else enabled_forms()
-    for f in forms:
+    if user is not None:
+        from ..services.scope import allowed_form_keys as _afk
+
+        _keys = _afk(user)
+    else:
+        _keys = None
+    per_form_forms = [form_by_key(form)] if form else enabled_forms()
+    if _keys is not None:
+        per_form_forms = [f for f in per_form_forms if f and f["key"] in _keys]
+    for f in per_form_forms:
         if not f:
             continue
         f_ids_sub = _apply_filters(
-            select(Survey.id), q, province_id, county_id, contact_option_id, date_from, date_to,
+            apply_record_scope(select(Survey.id), user) if user is not None else select(Survey.id),
+            q, province_id, county_id, contact_option_id, date_from, date_to,
             form=f["key"], counselor=counselor, service_type=service_type,
         ).subquery()
         f_total = db.scalar(select(func.count()).select_from(f_ids_sub)) or 0

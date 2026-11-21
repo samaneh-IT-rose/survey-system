@@ -14,15 +14,13 @@ from ..constants import (
     LEVEL_ADMIN,
     LEVEL_LABELS,
     PERMISSIONS,
-    ROLE_DEFAULT_PERMS,
-    ROLE_DESCRIPTIONS,
-    ROLE_LABELS,
     VALID_LEVELS,
     VALID_PERMISSIONS,
-    VALID_ROLES,
 )
 from ..database import get_db
+from ..forms_registry import form_by_key
 from ..models import User
+from ..services.roles import role_default_perms, role_row, valid_role_keys
 from ..utils.activity import log_activity
 from ..utils.security import hash_password
 
@@ -37,12 +35,13 @@ def serialize_user(u: User) -> dict:
         "username": u.username,
         "full_name": u.full_name,
         "role": u.role,
-        "role_label": ROLE_LABELS.get(u.role, u.role),
+        "role_label": u.role_label,
         "level": u.level,
         "level_label": LEVEL_LABELS.get(u.level, u.level),
         "is_admin_level": u.is_admin_level,
         "permissions": u.permission_keys,
         "effective_permissions": u.effective_permissions,
+        "allowed_forms": u.allowed_form_keys,
         "is_active": u.is_active,
         "must_change_password": u.must_change_password,
         "created_at": u.created_at.isoformat() if u.created_at else None,
@@ -51,20 +50,29 @@ def serialize_user(u: User) -> dict:
 
 
 @router.get("/meta")
-def users_meta(admin: User = Depends(api_admin)):
-    """گزینه‌های مجاز برای فرم مدیریت کاربران: سطوح، نقش‌ها و دسترسی‌ها."""
+def users_meta(admin: User = Depends(api_admin), db: Session = Depends(get_db)):
+    """گزینه‌های مجاز برای فرم مدیریت کاربران: سطوح، نقش‌ها، دسترسی‌ها و فرم‌ها.
+
+    نقش‌ها از جدول roles می‌آیند (سیستمی + سفارشی)؛ default_permissions هر نقش
+    همان دسترسی‌هایی است که هنگام انتخاب نقش در فرم کاربر تیک می‌خورد.
+    """
+    from ..forms_registry import enabled_forms
+    from ..services.roles import list_roles
+
     return {
         "levels": [{"value": lv, "label": LEVEL_LABELS[lv]} for lv in VALID_LEVELS],
         "roles": [
             {
-                "value": role,
-                "label": ROLE_LABELS[role],
-                "description": ROLE_DESCRIPTIONS[role],
-                "default_permissions": list(ROLE_DEFAULT_PERMS[role]),
+                "value": r.key,
+                "label": r.name,
+                "description": r.description or "",
+                "default_permissions": role_default_perms(db, r.key) or ["view"],
+                "is_system": bool(r.is_system),
             }
-            for role in VALID_ROLES
+            for r in list_roles(db)
         ],
         "permissions": [{"value": key, "label": label} for key, label in PERMISSIONS],
+        "forms": enabled_forms(),
     }
 
 
@@ -91,10 +99,28 @@ def _clean_permissions(payload_permissions) -> list[str] | None:
     return keys
 
 
+def _clean_allowed_forms(payload_forms) -> list[str] | None:
+    """اعتبارسنجی «فرم‌های مجاز» ارسالی — None یعنی در درخواست نیامده."""
+    if payload_forms is None:
+        return None
+    if not isinstance(payload_forms, (list, tuple)):
+        raise HTTPException(422, detail={"message": "فرم‌های مجاز باید فهرست باشد."})
+    keys: list[str] = []
+    for f in payload_forms:
+        key = str(f).strip()
+        if form_by_key(key) is None:
+            raise HTTPException(422, detail={"message": f"فرم «{key}» معتبر نیست."})
+        if key not in keys:
+            keys.append(key)
+    return keys
+
+
 @router.get("")
 def list_users(admin: User = Depends(api_admin), db: Session = Depends(get_db)):
+    from ..services.roles import attach_role
+
     rows = db.scalars(select(User).order_by(User.id)).all()
-    return [serialize_user(u) for u in rows]
+    return [serialize_user(attach_role(u, db)) for u in rows]
 
 
 @router.post("")
@@ -113,12 +139,13 @@ def create_user(payload: dict, admin: User = Depends(api_admin), db: Session = D
         )
     if db.scalars(select(User).where(User.username == username)).first():
         raise HTTPException(422, detail={"message": "این نام کاربری قبلاً ثبت شده است."})
-    if role not in VALID_ROLES:
+    if role not in valid_role_keys(db):
         raise HTTPException(422, detail={"message": "نقش معتبر نیست."})
     if level not in VALID_LEVELS:
         raise HTTPException(422, detail={"message": "سطح کاربری معتبر نیست."})
     if len(password) < 6:
         raise HTTPException(422, detail={"message": "رمز عبور باید حداقل ۶ نویسه باشد."})
+    allowed_forms = _clean_allowed_forms(payload.get("allowed_forms"))
 
     user = User(
         username=username,
@@ -126,19 +153,24 @@ def create_user(payload: dict, admin: User = Depends(api_admin), db: Session = D
         role=role,
         level=level,
         permissions=",".join(perms) if perms is not None else "",
+        allowed_forms=",".join(allowed_forms) if allowed_forms is not None else "",
         password_hash=hash_password(password),
         must_change_password=bool(payload.get("must_change_password", True)),
     )
     db.add(user)
     db.commit()
+    role_label = role_row(db, role).name if role_row(db, role) else role
     log_activity(
         db,
         None,
         admin,
         "user_create",
-        f"ایجاد کاربر {username} — سطح {LEVEL_LABELS[level]}، نقش {ROLE_LABELS[role]}",
+        f"ایجاد کاربر {username} — سطح {LEVEL_LABELS[level]}، نقش {role_label}",
     )
     db.refresh(user)
+    from ..services.roles import attach_role
+
+    attach_role(user, db)
     return {"message": f"کاربر «{user.username}» ساخته شد.", "record": serialize_user(user)}
 
 
@@ -168,7 +200,7 @@ def update_user(user_id: int, payload: dict, admin: User = Depends(api_admin), d
 
     if "role" in payload:
         role = str(payload["role"]).strip()
-        if role not in VALID_ROLES:
+        if role not in valid_role_keys(db):
             raise HTTPException(422, detail={"message": "نقش معتبر نیست."})
         if role != user.role:
             if user.id == admin.id:
@@ -176,7 +208,8 @@ def update_user(user_id: int, payload: dict, admin: User = Depends(api_admin), d
             if user.is_admin_level and role != "admin" and _count_active_admins(db, exclude_id=user.id) == 0:
                 raise HTTPException(422, detail={"message": "حداقل یک مدیر سامانهٔ فعال باید باقی بماند."})
             user.role = role
-            changes.append(f"نقش → {ROLE_LABELS[role]}")
+            _rr = role_row(db, role)
+            changes.append(f"نقش → {_rr.name if _rr else role}")
 
     if "permissions" in payload:
         perms = _clean_permissions(payload.get("permissions")) or []
@@ -206,10 +239,24 @@ def update_user(user_id: int, payload: dict, admin: User = Depends(api_admin), d
         user.must_change_password = True
         changes.append("بازنشانی رمز")
 
+    if "allowed_forms" in payload:
+        forms = _clean_allowed_forms(payload.get("allowed_forms")) or []
+        new_raw = ",".join(forms)
+        if new_raw != (user.allowed_forms or ""):
+            user.allowed_forms = new_raw
+            if forms:
+                titles = "، ".join(form_by_key(k)["short_title"] for k in forms if form_by_key(k))
+                changes.append(f"فرم‌های مجاز → {titles}")
+            else:
+                changes.append("فرم‌های مجاز → همه")
+
     if not changes:
         raise HTTPException(422, detail={"message": "تغییری برای ذخیره ارسال نشده است."})
 
     db.commit()
     log_activity(db, None, admin, "user_update", f"کاربر {user.username}: {'، '.join(changes)}")
     db.refresh(user)
+    from ..services.roles import attach_role
+
+    attach_role(user, db)
     return {"message": "تغییرات کاربر ذخیره شد.", "record": serialize_user(user)}

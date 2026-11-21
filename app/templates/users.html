@@ -1,9 +1,13 @@
 {% extends "base.html" %}
+<div data-page="users"></div>
 {% block title %}مدیریت کاربران — {{ app_title }}{% endblock %}
 {% block content %}
 <div class="pagehead">
   <h1>مدیریت کاربران</h1>
-  <button class="btn primary" id="btnNewUser">+ کاربر جدید</button>
+  <div>
+    <a class="btn" href="{{ prefix }}/roles">مدیریت نقش‌ها</a>
+    <button class="btn primary" id="btnNewUser">+ کاربر جدید</button>
+  </div>
 </div>
 
 <div class="card">
@@ -48,7 +52,7 @@
       <label class="field"><span>نقش</span>
         <select id="u_role">
           {% for r in roles %}
-          <option value="{{ r.value }}">{{ r.label }} — {{ r.description }}</option>
+          <option value="{{ r.key }}">{{ r.name }}{% if r.is_system %} — {{ r.description }}{% endif %}</option>
           {% endfor %}
         </select>
       </label>
@@ -63,6 +67,17 @@
         </div>
         <small class="muted" id="u_perms_hint">با تغییر نقش، دسترسی‌های پیش‌فرض آن نقش تیک می‌خورد؛ می‌توانید دست‌کاری کنید.</small>
       </div>
+      <div class="field">
+        <span>فرم‌های مجاز (دیدن و ثبت)</span>
+        <div class="permsgrid" id="u_forms">
+          {% for f in forms %}
+          <label class="permitem">
+            <input type="checkbox" value="{{ f.key }}"> {{ f.title }}
+          </label>
+          {% endfor %}
+        </div>
+        <small class="muted" id="u_forms_hint">بدون انتخاب = همهٔ فرم‌ها؛ اگر فرم‌هایی تیک بخورد، کاربر فقط همان فرم‌ها را در منو، آرشیو و داشبورد می‌بیند و می‌تواند ثبت کند.</small>
+      </div>
       <label class="field"><span id="u_password_label">رمز عبور اولیه (حداقل ۶ نویسه) — کاربر در اولین ورود مجبور به تغییر می‌شود</span>
         <input type="text" id="u_password" dir="ltr" autocomplete="off" minlength="6" required>
       </label>
@@ -73,5 +88,7 @@
     </form>
   </div>
 </div>
+{% endblock %}{% block scripts %}
+<script>window.__ROLES__ = {{ roles | tojson }};</script>
+<script src="{{ asset('static/js/users.js') }}"></script>
 {% endblock %}
-{% block scripts %}<script src="{{ asset('static/js/users.js') }}"></script>{% endblock %}

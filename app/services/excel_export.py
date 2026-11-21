@@ -35,10 +35,15 @@ def _qid_of(form_questions: dict[str, list[Question]], form_key: str, q_text: st
     return None
 
 
-def _fetch_filtered(db: Session, filters: dict) -> list[Survey]:
+def _fetch_filtered(db: Session, filters: dict, user=None) -> list[Survey]:
     from sqlalchemy import or_
 
+    from ..services.scope import apply_record_scope
+
     stmt = select(Survey).order_by(Survey.survey_date.desc(), Survey.id.desc())
+    # قیدهای دسترسی کاربر (فقط داده‌های خودش + فرم‌های مجاز)
+    if user is not None:
+        stmt = apply_record_scope(stmt, user)
     if filters.get("form"):
         stmt = stmt.where(Survey.form_key == filters["form"])
     if filters.get("counselor"):
@@ -76,16 +81,26 @@ def _fetch_filtered(db: Session, filters: dict) -> list[Survey]:
     return list(db.scalars(stmt))
 
 
-def build_excel(db: Session, filters: dict) -> tuple[bytes, str]:
+def build_excel(db: Session, filters: dict, user=None) -> tuple[bytes, str]:
     """ستون‌های سؤال به تفکیک فرم: هر فرم فعال بلوک سؤال‌های خودش را دارد و
-    هر رکورد فقط در بلوک فرمِ خودش مقدار می‌گیرد (بقیه خالی می‌ماند)."""
+    هر رکورد فقط در بلوک فرمِ خودش مقدار می‌گیرد (بقیه خالی می‌ماند).
+
+    با قیدهای دسترسی کاربر هم محدود می‌شود (نسخهٔ 1.6.0).
+    """
     forms = enabled_forms()
+    # بلوک سؤال‌ها فقط برای فرم‌هایی که کاربر حق دیدنشان را دارد
+    if user is not None:
+        from ..services.scope import allowed_form_keys
+
+        keys = allowed_form_keys(user)
+        if keys is not None:
+            forms = [f for f in forms if f["key"] in keys]
     if filters.get("form"):
         forms = [f for f in forms if f["key"] == filters["form"]]
     form_questions: dict[str, list[Question]] = {
         f["key"]: questions_for_form(db, f["key"]) for f in forms
     }
-    rows = _fetch_filtered(db, filters)
+    rows = _fetch_filtered(db, filters, user=user)
 
     wb = Workbook()
     ws = wb.active

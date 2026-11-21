@@ -24,7 +24,7 @@ echo "== 1) متادیتای نقش‌ها و دسترسی‌ها =="
 curl -s -b "$CA" "$B/api/users/meta" -o /tmp/rbac_meta.json
 chk "تعداد نقش‌ها = ۶" "6" "$(J /tmp/rbac_meta.json "print(len(d['roles']))")"
 chk "تعداد سطوح کاربری = ۲" "2" "$(J /tmp/rbac_meta.json "print(len(d['levels']))")"
-chk "تعداد سطوح دسترسی = ۵" "5" "$(J /tmp/rbac_meta.json "print(len(d['permissions']))")"
+chk "تعداد سطوح دسترسی = ۶" "6" "$(J /tmp/rbac_meta.json "print(len(d['permissions']))")"
 
 echo "== 2) ساخت کاربران با نقش‌ها و سطح‌های مختلف =="
 mk() { # mk name role level perms pass

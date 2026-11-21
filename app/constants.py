@@ -59,14 +59,16 @@ ROLE_DESCRIPTIONS: dict[str, str] = {
 
 VALID_ROLES = tuple(ROLE_LABELS.keys())
 
-# ---------- سطوح دسترسی (۵ سطح) ----------
+# ---------- سطوح دسترسی (۶ سطح) ----------
 # هر کاربر می‌تواند ترکیبی از این دسترسی‌ها را داشته باشد؛ اگر خالی باشد،
-# دسترسی‌های پیش‌فرض نقش او اعمال می‌شود. سطح «مدیر سامانه» همیشه همه را دارد.
-PERM_VIEW = "view"     # فقط خواندنی — داشبورد، آرشیو و مشاهدهٔ رکورد
-PERM_EDIT = "edit"     # ثبت و ویرایش فرم نظرسنجی
-PERM_PRINT = "print"   # چاپ فرم و گرفتن PDF
-PERM_EXPORT = "export" # خروجی اکسل
-PERM_DELETE = "delete" # حذف رکورد
+# دسترسی‌های پیش‌فرض نقش او اعمال می‌شود. سطح «مدیر سامانه» همیشه همه را دارد
+# و از قید «فقط داده‌های خودش» مستثنا است.
+PERM_VIEW = "view"         # فقط خواندنی — داشبورد، آرشیو و مشاهدهٔ رکورد
+PERM_EDIT = "edit"         # ثبت و ویرایش فرم نظرسنجی
+PERM_PRINT = "print"       # چاپ فرم و گرفتن PDF
+PERM_EXPORT = "export"     # خروجی اکسل
+PERM_DELETE = "delete"     # حذف رکورد
+PERM_OWN_ONLY = "own_data" # محدودیت مشاهده: فقط رکوردهایی که خودش ثبت کرده
 
 # ترتیب نمایش در رابط کاربری
 PERMISSIONS: list[tuple[str, str]] = [
@@ -75,6 +77,7 @@ PERMISSIONS: list[tuple[str, str]] = [
     (PERM_PRINT, "چاپ و PDF"),
     (PERM_EXPORT, "خروجی اکسل"),
     (PERM_DELETE, "حذف رکورد"),
+    (PERM_OWN_ONLY, "فقط داده‌های خودش را ببیند"),
 ]
 VALID_PERMISSIONS = tuple(key for key, _ in PERMISSIONS)
 
@@ -87,6 +90,7 @@ PERM_DENY_MESSAGES: dict[str, str] = {
     PERM_PRINT: "شما اجازهٔ چاپ و دریافت PDF ندارید.",
     PERM_EXPORT: "شما اجازهٔ گرفتن خروجی اکسل ندارید.",
     PERM_DELETE: "شما اجازهٔ حذف رکورد ندارید.",
+    PERM_OWN_ONLY: "شما اجازهٔ دیدن رکوردهای دیگر کاربران را ندارید.",
 }
 
 # دسترسی‌های پیش‌فرض هر نقش — هنگام انتخاب نقش در فرم کاربر جدید
@@ -100,7 +104,7 @@ ROLE_DEFAULT_PERMS: dict[str, tuple[str, ...]] = {
     ROLE_VIEWER: (PERM_VIEW,),
 }
 
-ALL_PERMISSIONS = (PERM_VIEW, PERM_EDIT, PERM_PRINT, PERM_EXPORT, PERM_DELETE)
+ALL_PERMISSIONS = (PERM_VIEW, PERM_EDIT, PERM_PRINT, PERM_EXPORT, PERM_DELETE, PERM_OWN_ONLY)
 
 
 def parse_permissions(raw: str | None) -> list[str]:
@@ -111,16 +115,26 @@ def parse_permissions(raw: str | None) -> list[str]:
     return [p for p in keys if p in VALID_PERMISSIONS]
 
 
-def effective_permissions(level: str, role: str, permissions_raw: str | None) -> list[str]:
+def effective_permissions(
+    level: str,
+    role: str,
+    permissions_raw: str | None,
+    role_perms: list[str] | tuple[str, ...] | None = None,
+) -> list[str]:
     """دسترسی‌های نهایی کاربر — منطق واحد برای API و رابط کاربری.
 
     ۱) سطح «مدیر سامانه» یا نقش «مدیر» → همهٔ دسترسی‌ها
-    ۲) اگر فهرست دسترسی ذخیره‌شده غیرخالی باشد → همان فهرست
-    ۳) در غیر این صورت → دسترسی‌های پیش‌فرض نقش
+    ۲) اگر فهرست دسترسی ذخیره‌شدهٔ کاربر غیرخالی باشد → همان فهرست
+    ۳) اگر نقش در جدول نقش‌ها دسترسی پیش‌فرض داشته باشد → همان
+    ۴) در غیر این صورت → دسترسی‌های پیش‌فرض نقش‌های سیستمی (ثابت‌های قدیمی)
+
+    role_perms: دسترسی‌های پیش‌فرض نقش از جدول roles (نقش‌های تعریف‌شدهٔ جدید).
     """
     if level == LEVEL_ADMIN or role == ROLE_ADMIN:
         return list(ALL_PERMISSIONS)
     perms = parse_permissions(permissions_raw)
     if perms:
         return [p for p in ALL_PERMISSIONS if p in perms]
+    if role_perms:
+        return [p for p in ALL_PERMISSIONS if p in role_perms]
     return list(ROLE_DEFAULT_PERMS.get(role, (PERM_VIEW,)))
