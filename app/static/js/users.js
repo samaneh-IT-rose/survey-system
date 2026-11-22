@@ -33,6 +33,34 @@
     return iso.replace("T", " ").slice(0, 16);
   }
 
+  // ---------- استان‌ها — کمبوباکس استان کاربر (نسخهٔ 1.8.0) ----------
+  var PROVINCES = [];
+  function fillProvinceSelect(selectedName) {
+    var sel = document.getElementById("u_province");
+    var first = sel.querySelector("option[value='']");
+    sel.innerHTML = "";
+    if (first) sel.appendChild(first);
+    PROVINCES.forEach(function (p) {
+      var opt = document.createElement("option");
+      opt.value = p.name;
+      opt.textContent = p.name;
+      sel.appendChild(opt);
+    });
+    var name = selectedName || "";
+    if (name && !PROVINCES.some(function (p) { return p.name === name; })) {
+      // نام استان خارج از فهرست (مثل ورود دستی/اکسل قبلی) — حفظ می‌شود تا پاک نشود
+      var opt = document.createElement("option");
+      opt.value = name;
+      opt.textContent = name + " (خارج از فهرست)";
+      sel.appendChild(opt);
+    }
+    sel.value = name;
+  }
+  S.fetchJSON(S.api("/provinces")).then(function (rows) {
+    PROVINCES = rows || [];
+    fillProvinceSelect("");
+  }).catch(function () {});
+
   function permChips(perms) {
     if (!perms || !perms.length) return "<span class='muted'>پیش‌فرض نقش</span>";
     return perms.map(function (p) {
@@ -60,7 +88,7 @@
       "<td>" + u.id + "</td>" +
       "<td>" + esc(u.full_name) + "</td>" +
       "<td dir='ltr'>" + esc(u.national_id) + "</td>" +
-      "<td>" + esc(u.province_name) + "</td>" +
+      "<td>" + esc(u.province_name) + (u.province_name && !u.is_admin_level ? " <span class='permchip' title='این کاربر فقط رکوردهای استان خودش را می‌بیند'>فقط همین استان</span>" : "") + "</td>" +
       "<td dir='ltr'>" + esc(u.phone) + "</td>" +
       "<td>" + esc(u.position) + "</td>" +
       "<td dir='ltr'>" + esc(u.username) + "</td>" +
@@ -167,7 +195,7 @@
     document.getElementById("u_username_hint").style.display = isEdit ? "none" : "inline";
     document.getElementById("u_fullname").value = isEdit ? u.full_name : "";
     document.getElementById("u_national_id").value = isEdit ? (u.national_id || "") : "";
-    document.getElementById("u_province").value = isEdit ? (u.province_name || "") : "";
+    fillProvinceSelect(isEdit ? (u.province_name || "") : "");
     document.getElementById("u_phone").value = isEdit ? (u.phone || "") : "";
     document.getElementById("u_position").value = isEdit ? (u.position || "") : "";
     document.getElementById("u_notes").value = isEdit ? (u.notes || "") : "";

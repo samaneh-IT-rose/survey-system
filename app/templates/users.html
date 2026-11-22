@@ -51,7 +51,10 @@
         <input type="text" id="u_national_id" dir="ltr" inputmode="numeric" maxlength="10" autocomplete="off">
       </label>
       <label class="field"><span>استان</span>
-        <input type="text" id="u_province" autocomplete="off">
+        <select id="u_province">
+          <option value="">— همهٔ استان‌ها (بدون محدودیت) —</option>
+        </select>
+        <small class="muted" id="u_province_hint">اگر استان انتخاب شود، این کاربر فقط رکوردهای همان استان را می‌بیند و می‌تواند ثبت کند — فرم استان‌های دیگر در آرشیو، داشبورد، استخراج و خروجی اکسل به او برنمی‌گردد.</small>
       </label>
       <label class="field"><span>شماره همراه</span>
         <input type="text" id="u_phone" dir="ltr" inputmode="numeric" maxlength="11" autocomplete="off">

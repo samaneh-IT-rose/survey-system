@@ -212,7 +212,7 @@ def build_extract(
 
     stmt = select(Survey).order_by(Survey.survey_date.desc(), Survey.id.desc())
     if user is not None:
-        stmt = apply_record_scope(stmt, user)
+        stmt = apply_record_scope(stmt, user, db)
     if selected:
         stmt = stmt.where(Survey.form_key.in_(selected))
     if q and q.strip():

@@ -97,7 +97,7 @@ def build_dashboard(db: Session, *, q=None, province_id=None, county_id=None,
     # زیرپرس‌وجوی شناسه رکوردهای فیلترشده — مبنای همه آمارها
     # + قیدهای دسترسی کاربر: «فقط داده‌های خودش» و فرم‌های مجاز
     ids_sub = _apply_filters(
-        apply_record_scope(select(Survey.id), user) if user is not None else select(Survey.id),
+        apply_record_scope(select(Survey.id), user, db) if user is not None else select(Survey.id),
         q, province_id, county_id, contact_option_id, date_from, date_to,
         form=form, counselor=counselor, service_type=service_type,
     ).subquery()
@@ -214,7 +214,7 @@ def build_dashboard(db: Session, *, q=None, province_id=None, county_id=None,
         if not f:
             continue
         f_ids_sub = _apply_filters(
-            apply_record_scope(select(Survey.id), user) if user is not None else select(Survey.id),
+            apply_record_scope(select(Survey.id), user, db) if user is not None else select(Survey.id),
             q, province_id, county_id, contact_option_id, date_from, date_to,
             form=f["key"], counselor=counselor, service_type=service_type,
         ).subquery()

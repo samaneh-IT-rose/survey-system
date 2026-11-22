@@ -30,6 +30,8 @@ nohup.out
 *.xlsx
 *.pdf
 !docs/**/*.pdf
+# فایل رسمی seed کاربران سازمانی — بخشی از کد است
+!app/seed_data/*.xlsx
 
 # مرورگر Playwright
 .playwright/

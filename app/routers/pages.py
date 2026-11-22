@@ -212,7 +212,7 @@ def print_page(survey_id: int, request: Request, user: User = Depends(page_requi
         raise HTTPException(404, detail="رکورد یافت نشد.")
     from ..services.scope import can_view_record
 
-    if not can_view_record(user, s):
+    if not can_view_record(user, s, db):
         raise HTTPException(403, detail="این رکورد در محدودهٔ دسترسی شما نیست.")
     form_key = s.form_key or DEFAULT_FORM_KEY
     form = form_by_key(form_key)

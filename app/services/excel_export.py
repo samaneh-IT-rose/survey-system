@@ -43,7 +43,7 @@ def _fetch_filtered(db: Session, filters: dict, user=None) -> list[Survey]:
     stmt = select(Survey).order_by(Survey.survey_date.desc(), Survey.id.desc())
     # قیدهای دسترسی کاربر (فقط داده‌های خودش + فرم‌های مجاز)
     if user is not None:
-        stmt = apply_record_scope(stmt, user)
+        stmt = apply_record_scope(stmt, user, db)
     if filters.get("form"):
         stmt = stmt.where(Survey.form_key == filters["form"])
     if filters.get("counselor"):

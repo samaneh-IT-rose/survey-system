@@ -14,7 +14,7 @@ from ..constants import PERM_DELETE, PERM_EDIT, PERM_EXPORT, PERM_VIEW, RATING_L
 from ..database import get_db
 from ..forms_registry import DEFAULT_FORM_KEY, form_by_key, form_title
 from ..models import Survey, SurveyAnswer, User
-from ..services.scope import allowed_form_keys, apply_record_scope, can_view_record
+from ..services.scope import allowed_form_keys, apply_record_scope, can_view_record, province_scope_id
 from ..services.validation import validate_survey_payload
 from ..utils.activity import log_activity
 from ..utils.jalali import gdate_to_jalali_str, jalali_to_gregorian, parse_jalali_str
@@ -117,6 +117,11 @@ def create_survey(payload: dict, request: Request, user: User = Depends(api_requ
     if errors:
         raise HTTPException(status_code=422, detail={"message": "اطلاعات فرم معتبر نیست.", "errors": errors})
 
+    # کاربرِ دارای استان فقط فرمِ استان خودش را می‌تواند ثبت کند (نسخهٔ 1.8.0)
+    scoped_pid = province_scope_id(user, db)
+    if scoped_pid is not None and clean["province_id"] != scoped_pid:
+        raise HTTPException(status_code=403, detail={"message": "شما فقط می‌توانید فرم‌های استان خودتان را ثبت کنید."})
+
     survey = Survey(
         first_name=clean["first_name"],
         last_name=clean["last_name"],
@@ -167,8 +172,8 @@ def list_surveys(
     page = max(1, page)
 
     stmt = select(Survey)
-    # قیدهای سراسری: «فقط داده‌های خودش» + فرم‌های مجاز کاربر
-    stmt = apply_record_scope(stmt, user)
+    # قیدهای سراسری: «فقط داده‌های خودش» + فرم‌های مجاز + محدودیت استانی کاربر
+    stmt = apply_record_scope(stmt, user, db)
     if form:
         stmt = stmt.where(Survey.form_key == form)
     if q:
@@ -229,13 +234,13 @@ def survey_facets(
     با قیدهای دسترسی کاربر هم محدود می‌شود تا مقداری از رکوردهایی که
     کاربر حق دیدنشان را ندارد فاش نشود.
     """
-    stmt = apply_record_scope(select(Survey.counselor).distinct(), user)
+    stmt = apply_record_scope(select(Survey.counselor).distinct(), user, db)
     if form:
         stmt = stmt.where(Survey.form_key == form)
     counselors = [
         v for v in db.scalars(stmt).all() if v and str(v).strip()
     ]
-    stmt2 = apply_record_scope(select(Survey.service_type).distinct(), user)
+    stmt2 = apply_record_scope(select(Survey.service_type).distinct(), user, db)
     if form:
         stmt2 = stmt2.where(Survey.form_key == form)
     services = [
@@ -291,7 +296,7 @@ def get_survey(survey_id: int, user: User = Depends(api_require_perm(PERM_VIEW))
     s = db.get(Survey, survey_id)
     if s is None:
         raise HTTPException(status_code=404, detail={"message": "رکورد یافت نشد."})
-    if not can_view_record(user, s):
+    if not can_view_record(user, s, db):
         raise HTTPException(status_code=403, detail={"message": "این رکورد در محدودهٔ دسترسی شما نیست."})
     return serialize_survey(s)
 
@@ -302,7 +307,7 @@ def update_survey(survey_id: int, payload: dict, request: Request, user: User = 
     s = db.get(Survey, survey_id)
     if s is None:
         raise HTTPException(status_code=404, detail={"message": "رکورد یافت نشد."})
-    if not can_view_record(user, s):
+    if not can_view_record(user, s, db):
         raise HTTPException(status_code=403, detail={"message": "این رکورد در محدودهٔ دسترسی شما نیست."})
     # ویرایش همیشه با فرمِ خودِ رکورد اعتبارسنجی می‌شود؛ فرم رکورد قابل تغییر نیست
     if not payload.get("form_key"):
@@ -311,6 +316,11 @@ def update_survey(survey_id: int, payload: dict, request: Request, user: User = 
     clean, errors = validate_survey_payload(db, payload)
     if errors:
         raise HTTPException(status_code=422, detail={"message": "اطلاعات فرم معتبر نیست.", "errors": errors})
+
+    # کاربرِ دارای استان نمی‌تواند استان رکورد را به استان دیگر ببرد (نسخهٔ 1.8.0)
+    scoped_pid = province_scope_id(user, db)
+    if scoped_pid is not None and clean["province_id"] != scoped_pid:
+        raise HTTPException(status_code=403, detail={"message": "شما فقط می‌توانید فرم‌های استان خودتان را ثبت کنید."})
 
     s.first_name = clean["first_name"]
     s.last_name = clean["last_name"]
@@ -345,7 +355,7 @@ def delete_survey(survey_id: int, request: Request, user: User = Depends(api_req
     s = db.get(Survey, survey_id)
     if s is None:
         raise HTTPException(status_code=404, detail={"message": "رکورد یافت نشد."})
-    if not can_view_record(user, s):
+    if not can_view_record(user, s, db):
         raise HTTPException(status_code=403, detail={"message": "این رکورد در محدودهٔ دسترسی شما نیست."})
     detail = f"رکورد {survey_id} — {s.first_name} {s.last_name}"
     db.delete(s)

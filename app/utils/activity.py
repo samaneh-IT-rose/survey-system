@@ -21,6 +21,8 @@ ACTION_LABELS: dict[str, str] = {
     "excel_export": "خروجی اکسل",
     "user_create": "ایجاد کاربر",
     "user_update": "ویرایش کاربر",
+    "users_import": "ورود گروهی کاربران از اکسل",
+    "users_seed": "ورود خودکار کاربران (seed)",
     "apikey_create": "ایجاد کلید وب‌سرویس",
     "apikey_revoke": "لغو کلید وب‌سرویس",
     "template_question_create": "افزودن سؤال",

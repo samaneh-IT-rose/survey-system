@@ -1,8 +1,24 @@
 # ==============================================================
-#  Survey System - WINDOWS UPDATE SCRIPT  (v3 - foolproof)
+#  Survey System - WINDOWS UPDATE SCRIPT  (v5 - foolproof)
 #  Updates the app code on C:\survey-system.
 #  WITHOUT touching: database (data\), logs, venv, run-server.bat
 #
+#  WHAT IS NEW IN v5 (vs v4):
+#   - step [7/7] seeds the official organization users from the
+#     bundled Excel (app\seed_data\users_seed.xlsx) AFTER the
+#     service has started. It is IDEMPOTENT: running it twice
+#     never creates duplicate users (existing ones are skipped).
+#     New users log in with their NATIONAL CODE as username AND
+#     password and are forced to change the password at first
+#     login. Each user is limited to their own province.
+#  WHAT IS NEW IN v4 (vs v3):
+#   - the form-template sync now runs AFTER the service has
+#     started (step [6]). The new DB columns (form_keys/form_key)
+#     are created by the app itself at startup, so running the
+#     sync BEFORE the first start - like v3 did - always failed
+#     with a scary but harmless "no such column" error.
+#   - the app ALSO syncs the templates automatically at startup;
+#     step [6] is just the final confirmation you can see.
 #  WHAT IS NEW IN v3 (why your last update did not apply):
 #   - v2 silently downloaded from GitHub when the local zip was not
 #     found. The GitHub copy is OLD, so the server kept running the
@@ -32,7 +48,7 @@ $APPDIR  = "C:\survey-system"
 $BACKEND = 3010
 
 Write-Host "==============================================" -ForegroundColor Cyan
-Write-Host " Survey System - Update from LOCAL ZIP (v3)"   -ForegroundColor Cyan
+Write-Host " Survey System - Update from LOCAL ZIP (v5)"   -ForegroundColor Cyan
 Write-Host "==============================================" -ForegroundColor Cyan
 
 function Stop-WithError($msg) {
@@ -95,20 +111,20 @@ Write-Host (" zip found : " + $LOCALZIP) -ForegroundColor Green
 Write-Host (" zip date  : " + $zipItem.LastWriteTime) -ForegroundColor Green
 
 # ---------- 2) stop service ----------
-Write-Host ">> [1/5] Stopping the service..."
+Write-Host ">> [1/7] Stopping the service..."
 cmd /c 'schtasks /End /TN "SurveySystem" >nul 2>&1'
 Start-Sleep -Seconds 3
 
 # ---------- 3) backup ----------
 $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $backup = "C:\survey-backup-$stamp"
-Write-Host ">> [2/5] Backing up current app to $backup ..."
+Write-Host ">> [2/7] Backing up current app to $backup ..."
 New-Item -ItemType Directory -Path $backup -Force | Out-Null
 Copy-Item "$APPDIR\app" "$backup\app" -Recurse -Force
 if (Test-Path "$APPDIR\scripts") { Copy-Item "$APPDIR\scripts" "$backup\scripts" -Recurse -Force }
 
 # ---------- 4) extract, verify version, copy ----------
-Write-Host ">> [3/5] Preparing the new code..."
+Write-Host ">> [3/7] Preparing the new code..."
 $zip = "$env:TEMP\survey-update.zip"
 $ex  = "$env:TEMP\ss_update"
 Copy-Item $LOCALZIP $zip -Force
@@ -144,7 +160,7 @@ if (-not $zipVersion) {
 }
 Write-Host (" zip version: " + $zipVersion) -ForegroundColor Green
 
-Write-Host ">> [4/5] Copying new files..."
+Write-Host ">> [4/7] Copying new files..."
 robocopy "$src\app" "$APPDIR\app" /MIR /NFL /NDL /NJH /NJS | Out-Null
 if ($LASTEXITCODE -ge 8) { Stop-WithError "robocopy failed on app (code $LASTEXITCODE)" }
 if (Test-Path "$src\scripts") { robocopy "$src\scripts" "$APPDIR\scripts" /MIR /NFL /NDL /NJH /NJS | Out-Null }
@@ -153,24 +169,11 @@ Copy-Item "$src\requirements.txt" "$APPDIR\requirements.txt" -Force
 if (Test-Path "$src\README.md") { Copy-Item "$src\README.md" "$APPDIR\README.md" -Force }
 Remove-Item $ex -Recurse -Force
 
-# ---------- 4b) همگام‌سازی الگوی فرم (سؤال‌ها و وضعیت‌های تماس جدید) ----------
-# متن‌های الگو در دیتابیس سرور زندگی می‌کنند؛ این گام همان scripts/update_template.py
-# را روی دیتابیس موجود اجرا می‌کند (سؤال‌های قدیمی حذف نمی‌شوند، فقط غیرفعال می‌شوند
-# و پاسخ‌های رکوردهای قبلی سالم می‌مانند)
-Write-Host ">> [4b] Syncing the form template (new questions & contact statuses)..."
-$py = "$APPDIR\venv\Scripts\python.exe"
-if (Test-Path $py) {
-    & $py "$APPDIR\scripts\update_template.py"
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "   WARNING: template sync had an error - the app still runs." -ForegroundColor Yellow
-        Write-Host "   Run manually:  cd C:\survey-system ; venv\Scripts\python scripts\update_template.py" -ForegroundColor Yellow
-    }
-} else {
-    Write-Host "   venv python not found - skipping template sync." -ForegroundColor Yellow
-}
-
 # ---------- 5) restart + REAL version check ----------
-Write-Host ">> [5/5] Restarting the service..."
+# NOTE: the form-template sync moved to step [6] AFTER the start:
+# the app creates the new DB columns (form_keys/form_key) at startup,
+# so the sync can only succeed once the server has started once.
+Write-Host ">> [5/7] Restarting the service..."
 cmd /c 'schtasks /Run /TN "SurveySystem" >nul 2>&1'
 Write-Host "   Waiting for server to start..."
 Start-Sleep -Seconds 20
@@ -209,6 +212,44 @@ if (-not $ok) {
     Write-Host ""
     Write-Host ("   To rollback: copy " + $backup + "\app over " + $APPDIR + "\app and restart SurveySystem.") -ForegroundColor Yellow
 } else {
+    # ---------- 6) همگام‌سازی الگوی فرم (بعد از استارت، وقتی ستون‌های جدید ساخته شده‌اند) ----------
+    # متن‌های الگو در دیتابیس سرور زندگی می‌کنند؛ سؤال‌های قدیمی حذف نمی‌شوند،
+    # فقط غیرفعال می‌شوند و پاسخ‌های رکوردهای قبلی سالم می‌مانند.
+    # خود برنامه هم در استارت همین همگام‌سازی را انجام می‌دهد — این گام تأیید نهایی است.
+    Write-Host ">> [6/7] Syncing the form template (new questions & contact statuses)..."
+    $py = "$APPDIR\venv\Scripts\python.exe"
+    if (Test-Path $py) {
+        & $py "$APPDIR\scripts\update_template.py"
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "   WARNING: template sync had an error - the app still runs." -ForegroundColor Yellow
+            Write-Host "   Run manually:  cd C:\survey-system ; venv\Scripts\python scripts\update_template.py" -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "   venv python not found - skipping template sync." -ForegroundColor Yellow
+    }
+
+    # ---------- 7) seed کاربران سازمانی از فایل رسمی اکسل (idempotent) ----------
+    # فایل رسمی داخل ZIP است: app\seed_data\users_seed.xlsx (دو شیت:
+    # مسئولین اجرایی + مدیران کلینیک). اجرای دوباره هیچ کاربر تکراری نمی‌سازد.
+    # نام کاربری و رمز اولیه هر کاربر = کد ملی (با تغییر اجباری در اولین ورود).
+    Write-Host ">> [7/7] Seeding organization users from the bundled Excel..."
+    $seedXlsx = "$APPDIR\app\seed_data\users_seed.xlsx"
+    if (Test-Path $py) {
+        if (Test-Path $seedXlsx) {
+            Push-Location $APPDIR
+            $env:SURVEY_DATABASE_URL = "sqlite:///C:/survey-system/data/survey.db"
+            & $py -m app.seed_users --file "app\seed_data\users_seed.xlsx"
+            Pop-Location
+            Write-Host "   Users above are now in the system. Username = National ID," -ForegroundColor Green
+            Write-Host "   initial password = National ID (must be changed at first login)," -ForegroundColor Green
+            Write-Host "   and every user sees ONLY their own province's records." -ForegroundColor Green
+        } else {
+            Write-Host "   users_seed.xlsx not found in this zip - skipping seed." -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "   venv python not found - skipping user seed." -ForegroundColor Yellow
+    }
+
     Write-Host ""
     Write-Host "  NOW OPEN THE APP and press Ctrl+F5 on the login page:" -ForegroundColor Yellow
     Write-Host ("    http://127.0.0.1:" + $BACKEND + "/app/login") -ForegroundColor Yellow
@@ -217,6 +258,10 @@ if (-not $ok) {
     Write-Host "    cd C:\survey-system" -ForegroundColor Gray
     Write-Host "    venv\Scripts\python scripts\reset_password.py --list" -ForegroundColor Gray
     Write-Host "    venv\Scripts\python scripts\reset_password.py admin" -ForegroundColor Gray
+    Write-Host "  To re-run the user seed any time (safe, no duplicates):" -ForegroundColor Gray
+    Write-Host "    cd C:\survey-system" -ForegroundColor Gray
+    Write-Host "    set SURVEY_DATABASE_URL=sqlite:///C:/survey-system/data/survey.db" -ForegroundColor Gray
+    Write-Host "    venv\Scripts\python -m app.seed_users" -ForegroundColor Gray
     Write-Host "  (your old survey records are all safe)" -ForegroundColor Gray
 }
 Write-Host ""

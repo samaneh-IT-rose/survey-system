@@ -24,7 +24,7 @@ async def survey_pdf(survey_id: int, request: Request, user: User = Depends(api_
     s = db.get(Survey, survey_id)
     if s is None:
         raise HTTPException(404, detail={"message": "رکورد یافت نشد."})
-    if not can_view_record(user, s):
+    if not can_view_record(user, s, db):
         raise HTTPException(403, detail={"message": "این رکورد در محدودهٔ دسترسی شما نیست."})
 
     session_cookie = request.cookies.get(SESSION_COOKIE)

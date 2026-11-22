@@ -76,6 +76,12 @@
       sel.appendChild(o);
     });
     if (selectedId) sel.value = selectedId;
+    // کاربرِ دارای محدودیت استانی (نسخهٔ 1.8.0): سرور فقط استان خودش را می‌فرستد —
+    // اگر انتخاب‌شده‌ای نبود، همان استان تنها به‌صورت خودکار انتخاب می‌شود
+    if (!selectedId && provinces.length === 1) {
+      sel.value = provinces[0].id;
+      await loadCounties(provinces[0].id);
+    }
   }
 
   async function loadCounties(provinceId, selectedId) {
