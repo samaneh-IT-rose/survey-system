@@ -41,19 +41,29 @@
   }
 
   function formsCell(u) {
-    if (u.level === "admin") return "<span class='muted'>همهٔ فرم‌ها</span>";
+    if (u.is_admin_level) return "<span class='muted'>همهٔ فرم‌ها (مدیر — محدودیت فرم اعمال نمی‌شود)</span>";
     if (!u.allowed_forms || !u.allowed_forms.length) return "<span class='muted'>همهٔ فرم‌ها</span>";
     return u.allowed_forms.map(function (k) {
       return "<span class='permchip'>" + (FORM_TITLES[k] || k) + "</span>";
     }).join(" ");
   }
 
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
   function row(u) {
     var tr = document.createElement("tr");
     tr.innerHTML =
       "<td>" + u.id + "</td>" +
-      "<td>" + u.full_name + "</td>" +
-      "<td dir='ltr'>" + u.username + "</td>" +
+      "<td>" + esc(u.full_name) + "</td>" +
+      "<td dir='ltr'>" + esc(u.national_id) + "</td>" +
+      "<td>" + esc(u.province_name) + "</td>" +
+      "<td dir='ltr'>" + esc(u.phone) + "</td>" +
+      "<td>" + esc(u.position) + "</td>" +
+      "<td dir='ltr'>" + esc(u.username) + "</td>" +
       "<td><span class='levelbadge level-" + u.level + "'>" + u.level_label + "</span></td>" +
       "<td><span class='rolebadge'>" + u.role_label + "</span></td>" +
       "<td class='permcell'>" + permChips(u.effective_permissions) + "<div class='muted' style='margin-top:4px;font-size:11px'>فرم‌ها: " + formsCell(u) + "</div></td>" +
@@ -128,16 +138,22 @@
   function setCheckedForms(forms) { setCheckedBoxes("u_forms", forms); }
 
   function applyLevelUi() {
-    var isAdmin = document.getElementById("u_level").value === "admin";
+    var level = document.getElementById("u_level").value;
+    var role = document.getElementById("u_role").value;
+    // نقش «مدیر» هم هرچقدر سطح کاربر باشد، به‌صورت خودکار همهٔ دسترسی‌ها و همهٔ فرم‌ها را دارد —
+    // همین بی‌صدا بودن، علت گمراه‌شدن مدیر در تعیین «فرم‌های مجاز» بود؛ حالا در UI هم شفاف است
+    var isEffectivelyAdmin = level === "admin" || role === "admin";
     document.querySelectorAll("#u_perms input[type=checkbox]").forEach(function (cb) {
-      cb.disabled = isAdmin;
+      cb.disabled = isEffectivelyAdmin;
     });
     document.querySelectorAll("#u_forms input[type=checkbox]").forEach(function (cb) {
-      cb.disabled = isAdmin;
-      if (isAdmin) cb.checked = true; // مدیر همهٔ فرم‌ها را می‌بیند
+      cb.disabled = isEffectivelyAdmin;
+      if (isEffectivelyAdmin) cb.checked = true; // مدیر همهٔ فرم‌ها را می‌بیند
     });
-    document.getElementById("u_level_hint").textContent = isAdmin
-      ? "مدیر سامانه به همهٔ بخش‌ها و همهٔ فرم‌ها دسترسی دارد."
+    document.getElementById("u_level_hint").textContent = isEffectivelyAdmin
+      ? (level === "admin"
+        ? "مدیر سامانه به همهٔ بخش‌ها و همهٔ فرم‌ها دسترسی دارد و محدودیت فرم برایش اعمال نمی‌شود."
+        : "نقش «مدیر» همهٔ دسترسی‌ها و همهٔ فرم‌ها را می‌دهد؛ برای محدودکردن فرم‌ها نقش دیگری انتخاب کنید.")
       : "کاربر سامانه فقط بر اساس نقش، دسترسی‌ها و فرم‌های مجاز وارد می‌شود.";
   }
 
@@ -150,6 +166,11 @@
     un.disabled = isEdit; // نام کاربری پس از ساخت تغییر نمی‌کند
     document.getElementById("u_username_hint").style.display = isEdit ? "none" : "inline";
     document.getElementById("u_fullname").value = isEdit ? u.full_name : "";
+    document.getElementById("u_national_id").value = isEdit ? (u.national_id || "") : "";
+    document.getElementById("u_province").value = isEdit ? (u.province_name || "") : "";
+    document.getElementById("u_phone").value = isEdit ? (u.phone || "") : "";
+    document.getElementById("u_position").value = isEdit ? (u.position || "") : "";
+    document.getElementById("u_notes").value = isEdit ? (u.notes || "") : "";
     document.getElementById("u_level").value = isEdit ? u.level : "user";
     document.getElementById("u_role").value = isEdit ? u.role : "operator";
     if (isEdit && u.permissions && u.permissions.length) {
@@ -197,6 +218,11 @@
     var id = document.getElementById("u_id").value;
     var body = {
       full_name: document.getElementById("u_fullname").value.trim(),
+      national_id: document.getElementById("u_national_id").value.trim(),
+      province_name: document.getElementById("u_province").value.trim(),
+      phone: document.getElementById("u_phone").value.trim(),
+      position: document.getElementById("u_position").value.trim(),
+      notes: document.getElementById("u_notes").value.trim(),
       role: document.getElementById("u_role").value,
       level: document.getElementById("u_level").value,
       permissions: checkedPerms(),
@@ -225,6 +251,74 @@
       modal.hidden = true;
       load();
     }).catch(function (e) { S.toast(e.message, "error"); });
+  };
+
+  // ---------- ورود گروهی از اکسل ----------
+  var importModal = document.getElementById("importModal");
+  var impForm = document.getElementById("importForm");
+  var impResult = document.getElementById("importResult");
+  var impResultBody = document.getElementById("importResultBody");
+  var impSubmit = document.getElementById("importSubmit");
+
+  document.getElementById("btnImportUsers").onclick = function () {
+    impResult.hidden = true;
+    impResultBody.innerHTML = "";
+    impForm.reset();
+    document.getElementById("imp_fixed_row").hidden = true;
+    importModal.hidden = false;
+  };
+  document.getElementById("importCancel").onclick = function () {
+    importModal.hidden = true;
+    load();
+  };
+
+  document.getElementById("imp_pwmode").addEventListener("change", function () {
+    document.getElementById("imp_fixed_row").hidden = (this.value !== "fixed");
+  });
+
+  impForm.onsubmit = function (ev) {
+    ev.preventDefault();
+    var fileInput = document.getElementById("imp_file");
+    if (!fileInput.files || !fileInput.files.length) {
+      S.toast("فایل اکسل را انتخاب کنید.", "error");
+      return;
+    }
+    var fd = new FormData();
+    fd.append("file", fileInput.files[0]);
+    fd.append("level", document.getElementById("imp_level").value);
+    fd.append("role", document.getElementById("imp_role").value);
+    fd.append("password_mode", document.getElementById("imp_pwmode").value);
+    fd.append("fixed_password", document.getElementById("imp_fixed").value);
+    fd.append("allowed_forms", checkedBoxes("imp_forms").join(","));
+    impSubmit.disabled = true;
+    S.fetchJSON(S.api("/users/import-excel"), {
+      method: "POST",
+      body: fd,
+    }).then(function (res) {
+      impSubmit.disabled = false;
+      impResult.hidden = false;
+      var lines = [];
+      lines.push("<div><b>" + (res.created || []).length + "</b> کاربر ساخته شد، <b>" + (res.skipped || []).length + "</b> ردیف رد شد.</div>");
+      if ((res.created || []).length) {
+        lines.push("<div style='margin-top:6px'><b>ساخته‌شده‌ها:</b><ul style='margin:4px 0;padding-right:18px'>");
+        res.created.forEach(function (c) {
+          lines.push("<li>" + esc(c.full_name) + " — کد ملی <span dir='ltr'>" + esc(c.username) + "</span>" + (c.position ? " — " + esc(c.position) : "") + (c.province ? " — " + esc(c.province) : "") + "</li>");
+        });
+        lines.push("</ul></div>");
+      }
+      if ((res.skipped || []).length) {
+        lines.push("<div style='margin-top:6px;color:#b45309'><b>ردشده‌ها:</b><ul style='margin:4px 0;padding-right:18px'>");
+        res.skipped.forEach(function (s) {
+          lines.push("<li>شیت «" + esc(s.sheet) + "» ردیف " + esc(s.row) + (s.full_name ? " — " + esc(s.full_name) : "") + ": " + esc(s.reason) + "</li>");
+        });
+        lines.push("</ul></div>");
+      }
+      impResultBody.innerHTML = lines.join("");
+      S.toast(res.message || "ورود گروهی انجام شد.", "ok");
+    }).catch(function (e) {
+      impSubmit.disabled = false;
+      S.toast(e.message, "error");
+    });
   };
 
   load();

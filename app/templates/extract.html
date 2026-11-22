@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+<div data-page="extract"></div>
+{% block title %}استخراج داده — {{ app_title }}{% endblock %}
+{% block content %}
+<div class="pagehead">
+  <div>
+    <h1>استخراج داده از فرم‌ها</h1>
+    <div class="sub">انتخاب هر ستون دلخواه از «تمام فرم‌ها» — فقط فرم‌ها و رکوردهایی که اجازهٔ دیدنشان را دارید</div>
+  </div>
+</div>
+
+<section class="card">
+  <h2>۱) فرم‌ها</h2>
+  <div class="permsgrid" id="ex_forms">
+    {% for f in forms %}
+    <label class="permitem">
+      <input type="checkbox" value="{{ f.key }}" checked> {{ f.title }}
+    </label>
+    {% endfor %}
+  </div>
+  <small class="muted">اگر فرمی در فهرست نیست، یعنی مدیر آن را برای شما مجاز نکرده است.</small>
+</section>
+
+<section class="card">
+  <h2>۲) فیلترهای مشترک (اختیاری)</h2>
+  <div class="filters">
+    <div class="field">
+      <label for="ex_q">جست‌وجو (نام / کد ملی / تلفن)</label>
+      <input id="ex_q" type="search" class="input" placeholder="مثلاً رضایی یا ۰۹۱۲…">
+    </div>
+    <div class="field">
+      <label for="ex_province">استان</label>
+      <select id="ex_province"><option value="">همه</option></select>
+    </div>
+    <div class="field">
+      <label for="ex_from">از تاریخ (شمسی)</label>
+      <input id="ex_from" type="text" class="input" placeholder="۱۴۰۵/۰۱/۰۱" inputmode="numeric">
+    </div>
+    <div class="field">
+      <label for="ex_to">تا تاریخ (شمسی)</label>
+      <input id="ex_to" type="text" class="input" placeholder="۱۴۰۵/۱۲/۲۹" inputmode="numeric">
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>۳) ستون‌های خروجی</h2>
+  <div class="field">
+    <span>ستون‌های پایهٔ رکورد</span>
+    <div class="permsgrid" id="ex_base">
+      {% for b in base_fields %}
+      <label class="permitem">
+        <input type="checkbox" value="base:{{ b.key }}"> {{ b.label }}
+      </label>
+      {% endfor %}
+    </div>
+  </div>
+  {% for fkey, qs in form_questions.items() %}
+  <div class="field">
+    <span>سؤال‌های فرم «{{ forms | selectattr('key', 'equalto', fkey) | map(attribute='title') | join('') }}»</span>
+    <div class="permsgrid" id="ex_q_{{ fkey }}">
+      {% for q in qs %}
+      <label class="permitem" title="{{ q.text }}">
+        <input type="checkbox" value="q:{{ q.id }}"> {{ q.text | truncate(48) }}
+      </label>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+  <div class="actions" style="margin-top:12px">
+    <button class="btn" id="exAllBtn">انتخاب همهٔ ستون‌ها</button>
+    <button class="btn" id="exNoneBtn">لغو انتخاب ستون‌ها</button>
+    <button class="btn primary" id="exRunBtn"><span class="icn">🔎</span> استخراج</button>
+    {% if user and user.has_perm('export') %}
+    <button class="btn" id="exExcelBtn"><span class="icn">📊</span> خروجی اکسل همین انتخاب</button>
+    {% endif %}
+  </div>
+  <small class="muted">بدون انتخاب ستون، همهٔ ستون‌های پایه و همهٔ سؤال‌های فرم‌های انتخاب‌شده استخراج می‌شود.</small>
+</section>
+
+<section class="card">
+  <h2>نتیجه <span class="badge" id="exTotalBadge">—</span></h2>
+  <div class="tablewrap">
+    <table class="rtable" id="exTable">
+      <thead><tr id="exHeadRow"><th class="muted">هنوز استخراجی انجام نشده — فیلترها و ستون‌ها را انتخاب و «استخراج» را بزنید.</th></tr></thead>
+      <tbody id="exBody"></tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>window.__FORMS__ = {{ forms | tojson }};</script>
+<script src="{{ asset('static/js/extract.js') }}"></script>
+{% endblock %}

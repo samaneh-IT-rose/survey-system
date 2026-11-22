@@ -117,6 +117,31 @@ def records_page(request: Request, user: User = Depends(page_require_perm(PERM_V
     return templates.TemplateResponse(request, "records.html", _ctx(user, page_title="آرشیو فرم‌ها"))
 
 
+@router.get("/extract", response_class=HTMLResponse)
+def extract_page(request: Request, user: User = Depends(page_require_perm(PERM_VIEW)), db: Session = Depends(get_db)):
+    """استخراج آزاد داده از تمام فرم‌ها — انتخاب فرم و هر ستون دلخواه (نسخهٔ 1.7.0)."""
+    from ..services.extract import BASE_FIELDS
+    from ..services.form_template import questions_for_form
+    from ..services.scope import user_forms
+
+    forms = user_forms(user)
+    # سؤال‌های هر فرم برای انتخاب ستون — فقط فرم‌های مجاز این کاربر
+    form_questions = {}
+    for f in forms:
+        qs = questions_for_form(db, f["key"])
+        form_questions[f["key"]] = [{"id": q.id, "text": q.text} for q in qs]
+    return templates.TemplateResponse(
+        request,
+        "extract.html",
+        _ctx(
+            user,
+            page_title="استخراج داده از فرم‌ها",
+            base_fields=[{"key": k, "label": l} for k, l in BASE_FIELDS],
+            form_questions=form_questions,
+        ),
+    )
+
+
 @router.get("/dashboard", response_class=HTMLResponse)
 def dashboard_page(request: Request, user: User = Depends(page_require_perm(PERM_VIEW))):
     return templates.TemplateResponse(request, "dashboard.html", _ctx(user, page_title="داشبورد آماری"))

@@ -5,6 +5,8 @@
 <div class="pagehead">
   <h1>مدیریت کاربران</h1>
   <div>
+    <button class="btn" id="btnImportUsers">⬆ ورود از اکسل</button>
+    <a class="btn" href="{{ prefix }}/api/users/import-template" download>دانلود قالب اکسل</a>
     <a class="btn" href="{{ prefix }}/roles">مدیریت نقش‌ها</a>
     <button class="btn primary" id="btnNewUser">+ کاربر جدید</button>
   </div>
@@ -16,6 +18,10 @@
       <tr>
         <th>#</th>
         <th>نام و نام خانوادگی</th>
+        <th>کد ملی</th>
+        <th>استان</th>
+        <th>شماره همراه</th>
+        <th>سمت / گروه</th>
         <th>نام کاربری</th>
         <th>سطح کاربری</th>
         <th>نقش</th>
@@ -40,6 +46,21 @@
       </label>
       <label class="field"><span>نام و نام خانوادگی</span>
         <input type="text" id="u_fullname" required>
+      </label>
+      <label class="field"><span>کد ملی</span>
+        <input type="text" id="u_national_id" dir="ltr" inputmode="numeric" maxlength="10" autocomplete="off">
+      </label>
+      <label class="field"><span>استان</span>
+        <input type="text" id="u_province" autocomplete="off">
+      </label>
+      <label class="field"><span>شماره همراه</span>
+        <input type="text" id="u_phone" dir="ltr" inputmode="numeric" maxlength="11" autocomplete="off">
+      </label>
+      <label class="field"><span>سمت / گروه سازمانی</span>
+        <input type="text" id="u_position" autocomplete="off">
+      </label>
+      <label class="field"><span>توضیحات</span>
+        <input type="text" id="u_notes" autocomplete="off">
       </label>
       <label class="field"><span>سطح کاربری</span>
         <select id="u_level">
@@ -76,7 +97,7 @@
           </label>
           {% endfor %}
         </div>
-        <small class="muted" id="u_forms_hint">بدون انتخاب = همهٔ فرم‌ها؛ اگر فرم‌هایی تیک بخورد، کاربر فقط همان فرم‌ها را در منو، آرشیو و داشبورد می‌بیند و می‌تواند ثبت کند.</small>
+        <small class="muted" id="u_forms_hint">بدون انتخاب = همهٔ فرم‌ها؛ اگر فرم‌هایی تیک بخورد، کاربر فقط همان فرم‌ها را در منو، آرشیو و داشبورد می‌بیند و می‌تواند ثبت کند. <b>توجه:</b> کاربری که سطح «مدیر سامانه» یا نقش «مدیر» دارد همیشه همهٔ فرم‌ها را می‌بیند و محدودیت فرم برایش اعمال نمی‌شود — برای محدودکردن، سطح را «کاربر سامانه» و نقش دیگری انتخاب کنید.</small>
       </div>
       <label class="field"><span id="u_password_label">رمز عبور اولیه (حداقل ۶ نویسه) — کاربر در اولین ورود مجبور به تغییر می‌شود</span>
         <input type="text" id="u_password" dir="ltr" autocomplete="off" minlength="6" required>
@@ -84,6 +105,61 @@
       <div class="modal-actions">
         <button type="submit" class="btn primary">ذخیره</button>
         <button type="button" class="btn" id="userCancel">انصراف</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- مودال ورود گروهی از اکسل -->
+<div class="modal-backdrop" id="importModal" hidden>
+  <div class="modal">
+    <h2>ورود گروهی کاربران از اکسل</h2>
+    <p class="muted" style="margin-top:-6px">هر شیتِ فایل یک گروه سازمانی است (نام شیت = سمت کاربر) و سرستون‌ها باید شامل «استان»، «نام و نام خانوادگی»، «کد ملی»، «شماره همراه» و «توضیحات» باشد. نام کاربری هر کاربر کد ملی اوست و در اولین ورود مجبور به تغییر رمز می‌شود.</p>
+    <form id="importForm">
+      <label class="field"><span>فایل اکسل (xlsx)</span>
+        <input type="file" id="imp_file" accept=".xlsx" required>
+      </label>
+      <label class="field"><span>سطح کاربری همهٔ کاربران واردشده</span>
+        <select id="imp_level">
+          {% for lv in levels %}
+          <option value="{{ lv.value }}" {% if lv.value == 'user' %}selected{% endif %}>{{ lv.label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="field"><span>نقش همهٔ کاربران واردشده</span>
+        <select id="imp_role">
+          {% for r in roles %}
+          <option value="{{ r.key }}" {% if r.key == 'operator' %}selected{% endif %}>{{ r.name }} — {{ r.description }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="field"><span>رمز عبور اولیه</span>
+        <select id="imp_pwmode">
+          <option value="national_id">کد ملی هر نفر (پیشنهادی)</option>
+          <option value="phone">شمارهٔ همراه هر نفر</option>
+          <option value="fixed">رمز یکسان برای همه</option>
+        </select>
+      </label>
+      <label class="field" id="imp_fixed_row" hidden><span>رمز یکسان (حداقل ۶ نویسه)</span>
+        <input type="text" id="imp_fixed" dir="ltr" autocomplete="off">
+      </label>
+      <div class="field">
+        <span>فرم‌های مجاز (اختیاری — بدون انتخاب = همهٔ فرم‌ها)</span>
+        <div class="permsgrid" id="imp_forms">
+          {% for f in forms %}
+          <label class="permitem">
+            <input type="checkbox" value="{{ f.key }}"> {{ f.title }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      <div id="importResult" hidden>
+        <h3 style="font-size:15px;margin:8px 0 4px">نتیجهٔ ورود</h3>
+        <div id="importResultBody" style="max-height:220px;overflow:auto;font-size:12.5px"></div>
+      </div>
+      <div class="modal-actions">
+        <button type="submit" class="btn primary" id="importSubmit">ورود گروهی</button>
+        <button type="button" class="btn" id="importCancel">بستن</button>
       </div>
     </form>
   </div>

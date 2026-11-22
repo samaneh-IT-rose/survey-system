@@ -12,6 +12,7 @@ from .config import APP_PREFIX, APP_TITLE, BASE_DIR
 from .database import Base, SessionLocal, engine
 from .routers import (
     api_dashboard,
+    api_extract,
     api_export,
     api_keys,
     api_locations,
@@ -126,6 +127,7 @@ app.include_router(pages_auth.router)
 app.include_router(api_locations.router, prefix=APP_PREFIX)
 app.include_router(api_template.router, prefix=APP_PREFIX)
 app.include_router(api_surveys.router, prefix=APP_PREFIX)
+app.include_router(api_extract.router, prefix=APP_PREFIX)
 app.include_router(api_export.router, prefix=APP_PREFIX)
 app.include_router(api_dashboard.router, prefix=APP_PREFIX)
 app.include_router(api_users.router, prefix=APP_PREFIX)

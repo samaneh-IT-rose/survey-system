@@ -74,6 +74,12 @@ USER_NEW_COLUMNS: dict[str, str] = {
     "permissions": "TEXT NOT NULL DEFAULT ''",
     # فرم‌های مجاز کاربر «tel,individual,group» — خالی یعنی همهٔ فرم‌های فعال
     "allowed_forms": "TEXT NOT NULL DEFAULT ''",
+    # مشخصات سازمانی کاربر (نسخهٔ 1.7.0 — ورود گروهی از اکسل)
+    "national_id": "VARCHAR(10) NOT NULL DEFAULT ''",
+    "province_name": "VARCHAR(80) NOT NULL DEFAULT ''",
+    "phone": "VARCHAR(15) NOT NULL DEFAULT ''",
+    "position": "VARCHAR(80) NOT NULL DEFAULT ''",
+    "notes": "TEXT NOT NULL DEFAULT ''",
 }
 
 

@@ -196,6 +196,15 @@ class User(Base):
     permissions: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
     # فرم‌های مجاز برای این کاربر به‌صورت «tel,individual» — خالی یعنی همهٔ فرم‌های فعال
     allowed_forms: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
+    # ── مشخصات سازمانی کاربر (نسخهٔ 1.7.0 — ورود گروهی از اکسل) ──
+    # کد ملی رشته است تا صفر ابتدایی از بین نرود؛ برای کاربران اکسل، نام کاربری هم هست
+    national_id: Mapped[str] = mapped_column(String(10), nullable=False, default="", server_default="")
+    # استان محل خدمت کاربر — متن آزاد (مثل «آذربایجان غربی»)، نه کلید خارجی جدول استان‌ها
+    province_name: Mapped[str] = mapped_column(String(80), nullable=False, default="", server_default="")
+    phone: Mapped[str] = mapped_column(String(15), nullable=False, default="", server_default="")
+    # سمت / گروه سازمانی — از نام شیت اکسل گرفته می‌شود («مسئولین اجرایی»، «مدیران کلینیک»)
+    position: Mapped[str] = mapped_column(String(80), nullable=False, default="", server_default="")
+    notes: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     # اگر True باشد، کاربر تا تغییر رمز به هیچ صفحه‌ای جز تغییر رمز راه ندارد
     must_change_password: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

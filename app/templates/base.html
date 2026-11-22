@@ -29,6 +29,7 @@
         {% endif %}
         {% if user and user.has_perm('view') %}
         <a href="{{ prefix }}/records" data-nav="records">آرشیو فرم‌ها</a>
+        <a href="{{ prefix }}/extract" data-nav="extract">استخراج داده</a>
         <a href="{{ prefix }}/dashboard" data-nav="dashboard">داشبورد</a>
         {% endif %}
         {% if user and user.is_admin_level %}
