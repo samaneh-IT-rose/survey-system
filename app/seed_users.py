@@ -23,7 +23,7 @@ import sys
 from pathlib import Path
 
 from .constants import LEVEL_ADMIN, LEVEL_USER, ROLE_OPERATOR
-from .database import SessionLocal
+from .database import Base, SessionLocal
 from .services.roles import valid_role_keys
 from .services.users_import import import_users_from_bytes, validate_forms_csv
 
@@ -54,6 +54,17 @@ def main(argv: list[str] | None = None) -> int:
     if not path.exists():
         print(f"✖ فایل اکسل پیدا نشد: {path}")
         return 1
+
+    # ساخت جداول/مهاجرت‌ها اگر نباشند — روی سرور برنامه در استارت همین کار را
+    # می‌کند؛ این خط فقط اجرای مستقل seed (قبل از اولین استارت) را امن می‌کند
+    from .database import engine
+    from .database import ensure_schema_updates as _ensure_schema
+    from .services.roles import ensure_roles as _ensure_roles
+
+    Base.metadata.create_all(bind=engine)
+    _ensure_schema(engine)
+    with SessionLocal() as _db:
+        _ensure_roles(_db)
 
     with SessionLocal() as db:
         if args.role not in valid_role_keys(db):
