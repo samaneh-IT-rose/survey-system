@@ -48,7 +48,9 @@
         return '<tr>' +
           '<td><bdi>#' + r.id + '</bdi></td>' +
           '<td><span class="badge">' + (r.form_title || "") + '</span></td>' +
-          '<td>' + r.first_name + ' ' + r.last_name + '</td>' +
+          '<td>' + r.first_name + ' ' + r.last_name +
+            (r.criticism ? ' <span class="badge crit" title="' + String(r.criticism).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }) + '">انتقاد/پیشنهاد</span>' : '') +
+          '</td>' +
           '<td><bdi>' + r.national_code + '</bdi></td>' +
           '<td><bdi>' + r.phone + '</bdi></td>' +
           '<td>' + r.province.name + ' / ' + r.county.name + '</td>' +

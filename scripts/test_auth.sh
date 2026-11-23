@@ -23,6 +23,11 @@ if ! curl -s -b "$CA" -o /dev/null -w '%{http_code}' "$B/api/users" | grep -q 20
 fi
 echo "  (مدیر وارد شد)"
 
+# استان/شهرستان/وضعیت تماس با جست‌وجوی نام — ترتیب فهرست رسمی ثابت نیست (نسخهٔ 1.9.0)
+PID_T=$(curl -s -b "$CA" "$B/api/provinces" | python3 -c "import json,sys; print([p['id'] for p in json.load(sys.stdin) if p['name']=='تهران'][0])")
+CNTY_T=$(curl -s -b "$CA" "$B/api/counties?province_id=$PID_T" | python3 -c "import json,sys; print(json.load(sys.stdin)[0]['id'])")
+CT_IND=$(curl -s -b "$CA" "$B/api/template/contact-options?form=individual" | python3 -c "import json,sys; d=json.load(sys.stdin); c=[x for x in d if not x['requires_answers']]; print(c[0]['id'] if c else d[0]['id'])")
+
 echo "== 1) بدون ورود =="
 chk "GET صفحهٔ اصلی → ریدایرکت به login" "303" "$(curl -s -o /dev/null -w '%{http_code}' "$B/" | grep -q 200 && echo 200 || echo 303)"
 chk "GET صفحه ورود → 200" "200" "$(curl -s -o /dev/null -w '%{http_code}' "$B/login")"
@@ -52,14 +57,14 @@ fi
 echo "  (کارشناس و مشاهده‌گر وارد شدند)"
 
 echo "== 4) دسترسی کارشناس =="
-chk "کارشناس: ثبت فرم → 200" "200" "$(curl -s -b "$CO" -X POST "$B/api/surveys" -H 'Content-Type: application/json' -d '{"form_key":"individual","first_name":"علی","last_name":"محمدی","national_code":"0123456789","phone":"09123456789","province_id":8,"county_id":96,"survey_date":"1405/08/05","contact_option_id":3,"answers":[]}' -o /dev/null -w '%{http_code}')"
+chk "کارشناس: ثبت فرم → 200" "200" "$(curl -s -b "$CO" -X POST "$B/api/surveys" -H 'Content-Type: application/json' -d '{"form_key":"individual","first_name":"علی","last_name":"محمدی","national_code":"0123456789","phone":"09123456789","province_id":'"$PID_T"',"county_id":'"$CNTY_T"',"survey_date":"1405/08/05","contact_option_id":'"$CT_IND"',"answers":[]}' -o /dev/null -w '%{http_code}')"
 chk "کارشناس: مدیریت الگو → 403" "403" "$(curl -s -b "$CO" -X POST "$B/api/template/questions" -H 'Content-Type: application/json' -d '{"text":"تست"}' -o /dev/null -w '%{http_code}')"
 chk "کارشناس: حذف رکورد → 403" "403" "$(curl -s -b "$CO" -X DELETE "$B/api/surveys/1" -o /dev/null -w '%{http_code}')"
 chk "کارشناس: مدیریت کاربران → 403" "403" "$(curl -s -b "$CO" "$B/api/users" -o /dev/null -w '%{http_code}')"
 chk "کارشناس: اکسل → 200" "200" "$(curl -s -b "$CO" "$B/api/surveys/export/excel" -o /dev/null -w '%{http_code}')"
 
 echo "== 5) دسترسی مشاهده‌گر =="
-chk "مشاهده‌گر: ثبت فرم → 403" "403" "$(curl -s -b "$CV" -X POST "$B/api/surveys" -H 'Content-Type: application/json' -d '{"first_name":"x","last_name":"y","national_code":"0123456789","phone":"09123456789","province_id":8,"county_id":96,"survey_date":"1405/08/05","contact_option_id":3,"answers":[]}' -o /dev/null -w '%{http_code}')"
+chk "مشاهده‌گر: ثبت فرم → 403" "403" "$(curl -s -b "$CV" -X POST "$B/api/surveys" -H 'Content-Type: application/json' -d '{"first_name":"x","last_name":"y","national_code":"0123456789","phone":"09123456789","province_id":'"$PID_T"',"county_id":'"$CNTY_T"',"survey_date":"1405/08/05","contact_option_id":'"$CT_IND"',"answers":[]}' -o /dev/null -w '%{http_code}')"
 chk "مشاهده‌گر: داشبورد API → 200" "200" "$(curl -s -b "$CV" "$B/api/dashboard" -o /dev/null -w '%{http_code}')"
 chk "مشاهده‌گر: فهرست رکوردها → 200" "200" "$(curl -s -b "$CV" "$B/api/surveys?page=1&per_page=5" -o /dev/null -w '%{http_code}')"
 chk "مشاهده‌گر: اکسل → 403" "403" "$(curl -s -b "$CV" "$B/api/surveys/export/excel" -o /dev/null -w '%{http_code}')"
@@ -74,7 +79,7 @@ KEY=$(curl -s -b "$CA" -X POST "$B/api/keys" -H "Content-Type: application/json"
 echo "  کلید: ${KEY:0:12}..."
 chk "بدون کلید → 401" "401" "$(curl -s -o /dev/null -w '%{http_code}' "$B/api/v1/surveys")"
 chk "کلید غلط → 401" "401" "$(curl -s -o /dev/null -w '%{http_code}' -H 'X-API-Key: sk_invalid' "$B/api/v1/surveys")"
-chk "وب‌سرویس: ثبت فرم → 200" "200" "$(curl -s -X POST "$B/api/v1/surveys" -H "X-API-Key: $KEY" -H 'Content-Type: application/json' -d '{"form_key":"individual","first_name":"وب","last_name":"سرویس","national_code":"0123456789","phone":"09123456789","province_id":8,"county_id":96,"survey_date":"1405/08/05","contact_option_id":3,"answers":[]}' -o /tmp/v1.json -w '%{http_code}')"
+chk "وب‌سرویس: ثبت فرم → 200" "200" "$(curl -s -X POST "$B/api/v1/surveys" -H "X-API-Key: $KEY" -H 'Content-Type: application/json' -d '{"form_key":"individual","first_name":"وب","last_name":"سرویس","national_code":"0123456789","phone":"09123456789","province_id":'"$PID_T"',"county_id":'"$CNTY_T"',"survey_date":"1405/08/05","contact_option_id":'"$CT_IND"',"answers":[]}' -o /tmp/v1.json -w '%{http_code}')"
 python3 -c "import json; d=json.load(open('/tmp/v1.json')); print('  ثبت شد: id =', d['id'])"
 chk "وب‌سرویس: فهرست → 200" "200" "$(curl -s -H "X-API-Key: $KEY" "$B/api/v1/surveys?per_page=5" -o /dev/null -w '%{http_code}')"
 chk "وب‌سرویس: داشبورد → 200" "200" "$(curl -s -H "X-API-Key: $KEY" "$B/api/v1/dashboard" -o /dev/null -w '%{http_code}')"

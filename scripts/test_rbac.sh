@@ -20,6 +20,11 @@ if echo "$LOC" | grep -q "change-password"; then
 fi
 chk "مدیر وارد شد" "200" "$(curl -s -b "$CA" -o /dev/null -w '%{http_code}' "$B/api/users")"
 
+# استان/شهرستان/وضعیت تماس با جست‌وجوی نام — ترتیب فهرست رسمی ثابت نیست (نسخهٔ 1.9.0)
+PID_T=$(curl -s -b "$CA" "$B/api/provinces" | python3 -c "import json,sys; print([p['id'] for p in json.load(sys.stdin) if p['name']=='تهران'][0])")
+CNTY_T=$(curl -s -b "$CA" "$B/api/counties?province_id=$PID_T" | python3 -c "import json,sys; print(json.load(sys.stdin)[0]['id'])")
+CT_IND=$(curl -s -b "$CA" "$B/api/template/contact-options?form=individual" | python3 -c "import json,sys; d=json.load(sys.stdin); c=[x for x in d if not x['requires_answers']]; print(c[0]['id'] if c else d[0]['id'])")
+
 echo "== 1) متادیتای نقش‌ها و دسترسی‌ها =="
 curl -s -b "$CA" "$B/api/users/meta" -o /tmp/rbac_meta.json
 chk "تعداد نقش‌ها = ۶" "6" "$(J /tmp/rbac_meta.json "print(len(d['roles']))")"
@@ -62,12 +67,12 @@ login "$VW2" 'Vw#12345' /tmp/rbac_vw.txt
 login "$AD2" 'Ad2#12345' /tmp/rbac_ad2.txt
 
 echo "== 3) نقش ورود داده: ثبت دارد، اکسل/حذف ندارد =="
-chk "ورود داده: ثبت فرم → 200" "200" "$(curl -s -b /tmp/rbac_de.txt -X POST "$B/api/surveys" -H 'Content-Type: application/json' -d '{"first_name":"ورود","last_name":"داده","national_code":"0123456789","phone":"09123456789","province_id":8,"county_id":96,"survey_date":"1405/08/05","form_key":"individual","contact_option_id":3,"answers":[],"counselor":"مشاور تست"}' -o /dev/null -w '%{http_code}')"
+chk "ورود داده: ثبت فرم → 200" "200" "$(curl -s -b /tmp/rbac_de.txt -X POST "$B/api/surveys" -H 'Content-Type: application/json' -d '{"first_name":"ورود","last_name":"داده","national_code":"0123456789","phone":"09123456789","province_id":'"$PID_T"',"county_id":'"$CNTY_T"',"survey_date":"1405/08/05","form_key":"individual","contact_option_id":'"$CT_IND"',"answers":[],"counselor":"مشاور تست"}' -o /dev/null -w '%{http_code}')"
 chk "ورود داده: اکسل → 403" "403" "$(curl -s -b /tmp/rbac_de.txt "$B/api/surveys/export/excel" -o /dev/null -w '%{http_code}')"
 chk "ورود داده: حذف رکورد ۱ → 403" "403" "$(curl -s -b /tmp/rbac_de.txt -X DELETE "$B/api/surveys/1" -o /dev/null -w '%{http_code}')"
 
 echo "== 4) نقش گزارش‌گیر: اکسل و چاپ دارد، ثبت ندارد =="
-chk "گزارش‌گیر: ثبت فرم → 403" "403" "$(curl -s -b /tmp/rbac_rep.txt -X POST "$B/api/surveys" -H 'Content-Type: application/json' -d '{"first_name":"گ","last_name":"ر","national_code":"0123456789","phone":"09123456789","province_id":8,"county_id":96,"survey_date":"1405/08/05","contact_option_id":3,"answers":[],"form_key":"individual"}' -o /dev/null -w '%{http_code}')"
+chk "گزارش‌گیر: ثبت فرم → 403" "403" "$(curl -s -b /tmp/rbac_rep.txt -X POST "$B/api/surveys" -H 'Content-Type: application/json' -d '{"first_name":"گ","last_name":"ر","national_code":"0123456789","phone":"09123456789","province_id":'"$PID_T"',"county_id":'"$CNTY_T"',"survey_date":"1405/08/05","contact_option_id":'"$CT_IND"',"answers":[],"form_key":"individual"}' -o /dev/null -w '%{http_code}')"
 chk "گزارش‌گیر: اکسل → 200" "200" "$(curl -s -b /tmp/rbac_rep.txt "$B/api/surveys/export/excel" -o /tmp/rbac.xlsx -w '%{http_code}')"
 python3 -c "
 from openpyxl import load_workbook
@@ -91,7 +96,7 @@ echo "== 6) دسترسی سفارشی: به مشاهده‌گر، اکسل بد�
 VW2_ID=$(curl -s -b "$CA" "$B/api/users" -o /tmp/rbac_list.json; J /tmp/rbac_list.json "print([u['id'] for u in d if u['username']=='$VW2'][0])")
 chk "دادن دسترسی اکسل به مشاهده‌گر → 200" "200" "$(curl -s -b "$CA" -o /dev/null -w '%{http_code}' -X PATCH "$B/api/users/$VW2_ID" -H 'Content-Type: application/json' -d '{"permissions":["view","export"]}')"
 chk "مشاهده‌گر با اکسل: خروجی → 200" "200" "$(curl -s -b /tmp/rbac_vw.txt "$B/api/surveys/export/excel" -o /dev/null -w '%{http_code}')"
-chk "مشاهده‌گر با اکسل: ثبت هنوز → 403" "403" "$(curl -s -b /tmp/rbac_vw.txt -X POST "$B/api/surveys" -H 'Content-Type: application/json' -d '{"first_name":"x","last_name":"y","national_code":"0123456789","phone":"09123456789","province_id":8,"county_id":96,"survey_date":"1405/08/05","contact_option_id":3,"answers":[],"form_key":"individual"}' -o /dev/null -w '%{http_code}')"
+chk "مشاهده‌گر با اکسل: ثبت هنوز → 403" "403" "$(curl -s -b /tmp/rbac_vw.txt -X POST "$B/api/surveys" -H 'Content-Type: application/json' -d '{"first_name":"x","last_name":"y","national_code":"0123456789","phone":"09123456789","province_id":'"$PID_T"',"county_id":'"$CNTY_T"',"survey_date":"1405/08/05","contact_option_id":'"$CT_IND"',"answers":[],"form_key":"individual"}' -o /dev/null -w '%{http_code}')"
 chk "پس‌گرفتن اکسل مشاهده‌گر → 200" "200" "$(curl -s -b "$CA" -o /dev/null -w '%{http_code}' -X PATCH "$B/api/users/$VW2_ID" -H 'Content-Type: application/json' -d '{"permissions":["view"]}')"
 chk "مشاهده‌گر بدون اکسل: خروجی → 403" "403" "$(curl -s -b /tmp/rbac_vw.txt "$B/api/surveys/export/excel" -o /dev/null -w '%{http_code}')"
 

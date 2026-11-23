@@ -37,6 +37,7 @@ BASE_FIELDS: list[tuple[str, str]] = [
     ("counselor", "مشاور"),
     ("service_type", "نوع خدمت"),
     ("service_date", "تاریخ دریافت خدمت"),
+    ("criticism", "انتقادات و پیشنهادات"),
     ("created_at", "زمان ثبت"),
 ]
 
@@ -48,10 +49,10 @@ MAX_ROWS = 5000
 
 def extract_schema(db: Session, user) -> dict:
     """ساختار انتخاب استخراج برای این کاربر: فرم‌های مجاز + سؤال‌های هر فرم."""
-    from ..services.scope import allowed_form_keys
+    from ..services.scope import visible_form_keys
 
     forms = enabled_forms()
-    keys = allowed_form_keys(user)
+    keys = visible_form_keys(user, db)
     if keys is not None:
         forms = [f for f in forms if f["key"] in keys]
     out_forms = []
@@ -171,6 +172,8 @@ def _base_value(s: Survey, key: str) -> str:
         return s.service_type or ""
     if key == "service_date":
         return s.service_date or ""
+    if key == "criticism":
+        return getattr(s, "criticism", "") or ""
     if key == "created_at":
         import zoneinfo
 
@@ -195,10 +198,10 @@ def build_extract(
     date_to: str | None = None,
 ) -> dict:
     """خروجی استخراج: ستون‌ها + ردیف‌ها — همهٔ رکوردها در محدودهٔ دسترسی کاربر."""
-    from ..services.scope import allowed_form_keys, apply_record_scope
+    from ..services.scope import apply_record_scope, visible_form_keys
 
     enabled = {f["key"] for f in enabled_forms()}
-    keys = allowed_form_keys(user)
+    keys = visible_form_keys(user, db)
     allowed = set(enabled) if keys is None else (set(keys) & enabled)
     requested = {str(f).strip() for f in (forms or []) if str(f).strip()}
     selected = sorted(allowed & requested) if requested else sorted(allowed)

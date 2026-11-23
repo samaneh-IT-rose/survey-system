@@ -29,11 +29,13 @@
         {% endif %}
         {% if user and user.has_perm('view') %}
         <a href="{{ prefix }}/records" data-nav="records">آرشیو فرم‌ها</a>
+        <a href="{{ prefix }}/criticisms" data-nav="criticisms">انتقادات و پیشنهادات</a>
         <a href="{{ prefix }}/extract" data-nav="extract">استخراج داده</a>
         <a href="{{ prefix }}/dashboard" data-nav="dashboard">داشبورد</a>
         {% endif %}
         {% if user and user.is_admin_level %}
         <a href="{{ prefix }}/template" data-nav="template">مدیریت الگو</a>
+        <a href="{{ prefix }}/form-access" data-nav="form-access">سطح دسترسی فرم‌ها</a>
         <a href="{{ prefix }}/users" data-nav="users">کاربران</a>
         <a href="{{ prefix }}/roles" data-nav="roles">نقش‌ها</a>
         <a href="{{ prefix }}/api-keys" data-nav="apikeys">کلیدهای API</a>

@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}انتقادات و پیشنهادات — {{ app_title }}{% endblock %}
+{% block content %}
+<div data-page="criticisms"></div>
+
+<div class="pagehead">
+  <div>
+    <h1>انتقادات و پیشنهادات</h1>
+    <div class="sub">همهٔ متن‌های ثبت‌شده در بخش انتقادات و پیشنهاداتِ هر سه فرم — فقط در محدودهٔ دسترسی شما</div>
+  </div>
+  <div>
+    <button class="btn" id="critExportBtn">📥 خروجی اکسل</button>
+  </div>
+</div>
+
+<section class="card">
+  <div class="filters" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
+    <div class="field" style="min-width:180px">
+      <label for="cq">جست‌وجو</label>
+      <input id="cq" type="text" placeholder="نام، کد ملی یا شماره تماس…">
+    </div>
+    <div class="field" style="min-width:180px">
+      <label for="cform">فرم</label>
+      <select id="cform"><option value="">همهٔ فرم‌ها</option></select>
+    </div>
+    <div class="field" style="min-width:180px">
+      <label for="cprovince">استان</label>
+      <select id="cprovince"><option value="">همهٔ استان‌ها</option></select>
+    </div>
+    <div class="field">
+      <label for="cdate_from">از تاریخ (شمسی)</label>
+      <input id="cdate_from" type="text" placeholder="۱۴۰۵/۰۱/۰۱">
+    </div>
+    <div class="field">
+      <label for="cdate_to">تا تاریخ (شمسی)</label>
+      <input id="cdate_to" type="text" placeholder="۱۴۰۵/۱۲/۲۹">
+    </div>
+    <div class="field">
+      <button class="btn primary" id="critSearchBtn">جست‌وجو</button>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="muted" id="critCount" style="margin-bottom:8px"></div>
+  <div class="tablewrap">
+    <table class="datatable" id="critTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>فرم</th>
+          <th>نام و نام خانوادگی</th>
+          <th>کد ملی</th>
+          <th>استان</th>
+          <th>شهرستان</th>
+          <th>تاریخ نظرسنجی</th>
+          <th>انتقادات و پیشنهادات</th>
+          <th>زمان ثبت</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div class="actions" style="margin-top:10px">
+    <button class="btn sm" id="critPrev">← قبلی</button>
+    <span class="muted" id="critPageInfo"></span>
+    <button class="btn sm" id="critNext">بعدی →</button>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>window.__CRIT_FORMS__ = {{ forms | tojson }};</script>
+<script src="{{ asset('static/js/criticisms.js') }}"></script>
+{% endblock %}

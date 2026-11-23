@@ -287,6 +287,8 @@ html[data-mode="dark"] .btn.danger:hover { background: #2a1414; }
 }
 .badge.warn { color: #b45309; background: #fef3c7; }
 html[data-mode="dark"] .badge.warn { color: #fbbf24; background: #33230a; }
+.badge.crit { color: #9d174d; background: #fce7f3; cursor: help; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[data-mode="dark"] .badge.crit { color: #f9a8d4; background: #3b1026; }
 
 .filters { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; align-items: end; }
 @media (max-width: 1000px) { .filters { grid-template-columns: repeat(3, 1fr); } }

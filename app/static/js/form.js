@@ -194,6 +194,7 @@
       service_date: getDateStr("s"),
       supervisor_name: $("supervisor_name").value.trim(),
       supervisor_signature: $("supervisor_signature").value.trim(),
+      criticism: $("criticism").value.trim(),
       answers: answers
     };
     /* نقاط قوت/پیشنهاد بهبود فقط در فرم تلفنی هستند؛ در فرم فردی ارسال نمی‌شوند تا
@@ -216,6 +217,7 @@
     setDateStr(rec.service_date || "", "s");
     $("supervisor_name").value = rec.supervisor_name || "";
     $("supervisor_signature").value = rec.supervisor_signature || "";
+    if (rec.criticism !== undefined && $("criticism")) $("criticism").value = rec.criticism || "";
     loadProvinces(rec.province.id).then(function () {
       return loadCounties(rec.province.id, rec.county.id);
     });

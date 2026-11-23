@@ -48,6 +48,8 @@ SURVEY_NEW_COLUMNS: dict[str, str] = {
     "improvement_extra": "TEXT NOT NULL DEFAULT ''",
     "supervisor_name": "VARCHAR(120) NOT NULL DEFAULT ''",
     "supervisor_signature": "VARCHAR(255) NOT NULL DEFAULT ''",
+    # بخش انتقادات و پیشنهادات — مشترک همهٔ فرم‌ها (نسخهٔ 1.9.0)
+    "criticism": "TEXT NOT NULL DEFAULT ''",
 }
 
 
@@ -79,6 +81,10 @@ USER_NEW_COLUMNS: dict[str, str] = {
     "province_name": "VARCHAR(80) NOT NULL DEFAULT ''",
     "phone": "VARCHAR(15) NOT NULL DEFAULT ''",
     "position": "VARCHAR(80) NOT NULL DEFAULT ''",
+    # لایهٔ دسترسی سازمانی (نسخهٔ 1.9.0): province / department
+    "access_layer": "VARCHAR(20) NOT NULL DEFAULT 'province'",
+    # ادارهٔ استان — برای کاربران لایهٔ «ادارهٔ استان»
+    "department": "VARCHAR(80) NOT NULL DEFAULT ''",
     "notes": "TEXT NOT NULL DEFAULT ''",
 }
 

@@ -319,6 +319,18 @@
             transform: translateY(-50%);
         }
 
+        /* انتقادات و پیشنهادات — بخش مشترک همهٔ فرم‌ها (نسخهٔ 1.9.0) */
+        .crit-lines { margin: 10px 0; }
+        .crit-line {
+            display: flex; align-items: flex-end; gap: 8px; margin-bottom: 8px;
+        }
+        .crit-line label { white-space: nowrap; font-weight: 600; font-size: 13px; }
+        .crit-line .dotted-input {
+            flex: 1; border: none; border-bottom: 1px dotted #333;
+            background: transparent; font-family: inherit; outline: none;
+            padding: 0 4px; color: #222;
+        }
+
         /* دکمهٔ چاپ — فقط در نمای مرورگر؛ در چاپ حذف می‌شود */
         .printbar { position: fixed; top: 12px; left: 12px; z-index: 9; display: flex; gap: 8px; }
         .printbar button {
@@ -570,6 +582,14 @@
                 {% endif %}
             </tbody>
         </table>
+
+        <!-- انتقادات و پیشنهادات (نسخهٔ 1.9.0) -->
+        <div class="crit-lines">
+            <div class="crit-line">
+                <label>انتقادات و پیشنهادات:</label>
+                <input type="text" class="dotted-input" value="{{ record.criticism }}" readonly>
+            </div>
+        </div>
 
         <!-- فوتر امضاها -->
         <div class="footer-grid">

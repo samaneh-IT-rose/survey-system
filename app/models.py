@@ -19,7 +19,16 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .constants import LEVEL_ADMIN, LEVEL_LABELS, ROLE_ADMIN, ROLE_LABELS, effective_permissions, parse_permissions
+from .constants import (
+    LAYER_LABELS,
+    LAYER_PROVINCE,
+    LEVEL_ADMIN,
+    LEVEL_LABELS,
+    ROLE_ADMIN,
+    ROLE_LABELS,
+    effective_permissions,
+    parse_permissions,
+)
 from .database import Base
 
 
@@ -128,6 +137,8 @@ class Survey(Base):
     # کارشناس نظارت حرفه‌ای: نام و امضا
     supervisor_name: Mapped[str] = mapped_column(String(120), nullable=False, default="", server_default="")
     supervisor_signature: Mapped[str] = mapped_column(String(255), nullable=False, default="", server_default="")
+    # انتقادات و پیشنهادات — بخش مشترک همهٔ فرم‌ها (نسخهٔ 1.9.0)
+    criticism: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=_now_tz
@@ -204,6 +215,11 @@ class User(Base):
     phone: Mapped[str] = mapped_column(String(15), nullable=False, default="", server_default="")
     # سمت / گروه سازمانی — از نام شیت اکسل گرفته می‌شود («مسئولین اجرایی»، «مدیران کلینیک»)
     position: Mapped[str] = mapped_column(String(80), nullable=False, default="", server_default="")
+    # لایهٔ دسترسی سازمانی (نسخهٔ 1.9.0): province = سطح استان، department = ادارهٔ استان
+    # قواعد «کدام فرم برای کدام لایه دیده شود» در جدول form_access نگه‌داری می‌شود
+    access_layer: Mapped[str] = mapped_column(String(20), nullable=False, default=LAYER_PROVINCE, server_default=LAYER_PROVINCE)
+    # ادارهٔ استان — فقط برای کاربران لایهٔ «ادارهٔ استان» (مثل تربیت بدنی، انتشارات و…)
+    department: Mapped[str] = mapped_column(String(80), nullable=False, default="", server_default="")
     notes: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     # اگر True باشد، کاربر تا تغییر رمز به هیچ صفحه‌ای جز تغییر رمز راه ندارد
@@ -229,6 +245,10 @@ class User(Base):
     @property
     def level_label(self) -> str:
         return LEVEL_LABELS.get(self.level, self.level)
+
+    @property
+    def access_layer_label(self) -> str:
+        return LAYER_LABELS.get(self.access_layer, self.access_layer)
 
     @property
     def allowed_form_keys(self) -> list[str]:
@@ -276,6 +296,23 @@ class Role(Base):
     is_system: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     display_order: Mapped[int] = mapped_column(Integer, nullable=False, default=100, server_default="100")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_now_tz)
+
+
+class FormAccess(Base):
+    """قواعد دیده‌شدن هر فرم در دو لایهٔ سازمانی — نسخهٔ 1.9.0.
+
+    لایهٔ «سطح استان» (مسئولین استانی) و لایهٔ «ادارهٔ استان» (واحدهای تابعه).
+    مدیر سامانه این قواعد را از صفحهٔ «سطح دسترسی فرم‌ها» تنظیم می‌کند:
+    برای برخی فرم‌ها فقط سطح استان ببیند و برای برخی دیگر ادارات استان هم.
+    پیش‌فرض هر دو True است تا پس از به‌روزرسانی رفتار کاربران موجود تغییر نکند.
+    """
+
+    __tablename__ = "form_access"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    form_key: Mapped[str] = mapped_column(String(20), unique=True, nullable=False, index=True)
+    visible_to_province: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    visible_to_department: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
 
 class ApiKey(Base):

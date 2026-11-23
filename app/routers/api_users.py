@@ -15,9 +15,12 @@ from sqlalchemy.orm import Session
 
 from ..auth import api_admin
 from ..constants import (
+    LAYER_LABELS,
+    LAYER_PROVINCE,
     LEVEL_ADMIN,
     LEVEL_LABELS,
     PERMISSIONS,
+    VALID_LAYERS,
     VALID_LEVELS,
     VALID_PERMISSIONS,
 )
@@ -49,6 +52,7 @@ def _profile_from_payload(payload: dict, target: User | None = None) -> tuple[di
         "province_name": "استان",
         "phone": "شماره همراه",
         "position": "سمت",
+        "department": "ادارهٔ استان",
         "notes": "توضیحات",
     }
     changed: list[str] = []
@@ -66,6 +70,14 @@ def _profile_from_payload(payload: dict, target: User | None = None) -> tuple[di
         values[key] = v
         if target is None or getattr(target, key) != v:
             changed.append(label)
+    # لایهٔ دسترسی سازمانی (نسخهٔ 1.9.0) — فقط مقادیر معتبر پذیرفته می‌شود
+    if "access_layer" in payload:
+        layer = str(payload.get("access_layer") or "").strip()
+        if layer not in VALID_LAYERS:
+            raise HTTPException(422, detail={"message": "لایهٔ دسترسی معتبر نیست — «سطح استان» یا «ادارهٔ استان»."})
+        values["access_layer"] = layer
+        if target is None or getattr(target, "access_layer", "") != layer:
+            changed.append("لایهٔ دسترسی → " + LAYER_LABELS.get(layer, layer))
     return values, changed
 
 
@@ -86,6 +98,9 @@ def serialize_user(u: User) -> dict:
         "province_name": u.province_name,
         "phone": u.phone,
         "position": u.position,
+        "access_layer": u.access_layer,
+        "access_layer_label": u.access_layer_label,
+        "department": u.department,
         "notes": u.notes,
         "is_active": u.is_active,
         "must_change_password": u.must_change_password,
@@ -118,6 +133,8 @@ def users_meta(admin: User = Depends(api_admin), db: Session = Depends(get_db)):
         ],
         "permissions": [{"value": key, "label": label} for key, label in PERMISSIONS],
         "forms": enabled_forms(),
+        # لایه‌های دسترسی سازمانی (نسخهٔ 1.9.0): سطح استان / ادارهٔ استان
+        "access_layers": [{"value": key, "label": label} for key, label in LAYER_LABELS.items()],
     }
 
 
@@ -206,6 +223,8 @@ def create_user(payload: dict, admin: User = Depends(api_admin), db: Session = D
         province_name=profile.get("province_name", ""),
         phone=profile.get("phone", ""),
         position=profile.get("position", ""),
+        access_layer=profile.get("access_layer", LAYER_PROVINCE),
+        department=profile.get("department", ""),
         notes=profile.get("notes", ""),
     )
     db.add(user)

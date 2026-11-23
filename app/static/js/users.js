@@ -91,6 +91,7 @@
       "<td>" + esc(u.province_name) + (u.province_name && !u.is_admin_level ? " <span class='permchip' title='این کاربر فقط رکوردهای استان خودش را می‌بیند'>فقط همین استان</span>" : "") + "</td>" +
       "<td dir='ltr'>" + esc(u.phone) + "</td>" +
       "<td>" + esc(u.position) + "</td>" +
+      "<td>" + (u.is_admin_level ? "<span class='muted'>بدون محدودیت</span>" : "<span class='permchip' title='لایهٔ سازمانی کاربر — اینکه هر فرم را کدام لایه ببیند در صفحهٔ «سطح دسترسی فرم‌ها» تنظیم می‌شود'>" + esc(u.access_layer_label || u.access_layer || "سطح استان") + "</span>") + "</td>" +
       "<td dir='ltr'>" + esc(u.username) + "</td>" +
       "<td><span class='levelbadge level-" + u.level + "'>" + u.level_label + "</span></td>" +
       "<td><span class='rolebadge'>" + u.role_label + "</span></td>" +
@@ -198,6 +199,8 @@
     fillProvinceSelect(isEdit ? (u.province_name || "") : "");
     document.getElementById("u_phone").value = isEdit ? (u.phone || "") : "";
     document.getElementById("u_position").value = isEdit ? (u.position || "") : "";
+    document.getElementById("u_access_layer").value = isEdit ? (u.access_layer || "province") : "province";
+    document.getElementById("u_department").value = isEdit ? (u.department || "") : "";
     document.getElementById("u_notes").value = isEdit ? (u.notes || "") : "";
     document.getElementById("u_level").value = isEdit ? u.level : "user";
     document.getElementById("u_role").value = isEdit ? u.role : "operator";
@@ -250,6 +253,8 @@
       province_name: document.getElementById("u_province").value.trim(),
       phone: document.getElementById("u_phone").value.trim(),
       position: document.getElementById("u_position").value.trim(),
+      access_layer: document.getElementById("u_access_layer").value,
+      department: document.getElementById("u_department").value.trim(),
       notes: document.getElementById("u_notes").value.trim(),
       role: document.getElementById("u_role").value,
       level: document.getElementById("u_level").value,
@@ -330,7 +335,7 @@
       if ((res.created || []).length) {
         lines.push("<div style='margin-top:6px'><b>ساخته‌شده‌ها:</b><ul style='margin:4px 0;padding-right:18px'>");
         res.created.forEach(function (c) {
-          lines.push("<li>" + esc(c.full_name) + " — کد ملی <span dir='ltr'>" + esc(c.username) + "</span>" + (c.position ? " — " + esc(c.position) : "") + (c.province ? " — " + esc(c.province) : "") + "</li>");
+          lines.push("<li>" + esc(c.full_name) + " — کد ملی <span dir='ltr'>" + esc(c.username) + "</span>" + (c.position ? " — " + esc(c.position) : "") + (c.province ? " — " + esc(c.province) : "") + (c.access_layer ? " — لایهٔ " + esc(c.access_layer === "department" ? "ادارهٔ استان" : "سطح استان") : "") + "</li>");
         });
         lines.push("</ul></div>");
       }

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}سطح دسترسی فرم‌ها — {{ app_title }}{% endblock %}
+{% block content %}
+<div data-page="form-access"></div>
+
+<div class="pagehead">
+  <div>
+    <h1>سطح دسترسی فرم‌ها</h1>
+    <div class="sub">دو لایهٔ سازمانی: «سطح استان» و «ادارهٔ استان» — تعیین کنید هر فرم را کدام لایه ببیند</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="note">
+    برای هر فرم دو تیک دارید: <b>سطح استان</b> (مسئولین استانی مثل مدیران کلینیک و مسئولین اجرایی)
+    و <b>ادارهٔ استان</b> (واحدهای تابعهٔ استانی). اگر تیک «ادارهٔ استان» را بردارید، آن فرم فقط برای
+    لایهٔ «سطح استان» نمایش داده می‌شود و کاربران لایهٔ «ادارهٔ استان» آن را در منو، صفحهٔ ثبت،
+    آرشیو، داشبورد، تحلیل تلفیقی، استخراج داده و خروجی اکسل نمی‌بینند و نمی‌توانند ثبت کنند.
+    مدیر سامانه هرگز محدود نیست. تغییر ذخیره‌شده بلافاصله برای همهٔ کاربران همان لایه اعمال می‌شود.
+  </div>
+  <table class="datatable" id="faTable">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>فرم</th>
+        <th>دیده‌شدن توسط لایهٔ «سطح استان»</th>
+        <th>دیده‌شدن توسط لایهٔ «ادارهٔ استان»</th>
+        <th>وضعیت فرم</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <div class="actions" style="margin-top:12px">
+    <button type="button" class="btn primary" id="faSave">💾 ذخیرهٔ قواعد</button>
+    <span class="muted" id="faState" aria-live="polite"></span>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ asset('static/js/form_access.js') }}"></script>{% endblock %}

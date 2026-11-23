@@ -18,11 +18,23 @@ import re
 
 from sqlalchemy import select
 
+from ..constants import LAYER_DEPARTMENT, LAYER_PROVINCE
 from ..forms_registry import form_by_key
 from ..models import User
 from ..utils.security import hash_password
 
 VALID_USERNAME_RE = re.compile(r"^[a-zA-Z0-9_.]{3,60}$")
+
+
+def layer_for_sheet(sheet_title: str) -> str:
+    """لایهٔ دسترسی سازمانی بر اساس نام شیت — نسخهٔ 1.9.0.
+
+    شیت «مدیران کلینیک» (و هر شیت دیگری که «کلینیک» دارد) در لایهٔ
+    «ادارهٔ استان» قرار می‌گیرد و بقیه (مثل «مسئولین اجرایی») در لایهٔ
+    «سطح استان». مدیر بعداً می‌تواند لایهٔ هر کاربر را در صفحهٔ کاربران عوض کند.
+    """
+    title = (sheet_title or "")
+    return LAYER_DEPARTMENT if "کلینیک" in title else LAYER_PROVINCE
 
 # ارقام فارسی/عربی → لاتین — برای کد ملی و شماره همراه فایل اکسل
 _FA_DIGITS = str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩", "01234567890123456789")
@@ -33,6 +45,7 @@ HEADER_ALIASES: list[tuple[str, tuple[str, ...]]] = [
     ("full_name", ("نام و نام خانوادگی", "نام خانوادگی", "نام", "full name", "fullname")),
     ("national_id", ("کد ملی", "کدملی", "national", "کد")),
     ("phone", ("شماره همراه", "موبایل", "همراه", "تلفن", "phone", "mobile")),
+    ("department", ("اداره", "واحد", "department", "unit")),
     ("notes", ("توضیحات", "توضیح", "notes")),
 ]
 
@@ -159,6 +172,7 @@ def import_users_from_bytes(
             phone = norm_digits(cell("phone"), zfill=11)[:15]
             full_name = norm_text(cell("full_name"), 120)
             province = norm_text(cell("province_name"), 80)
+            department = norm_text(cell("department"), 80)
             notes = norm_text(cell("notes"), 1000)
             if not any([nid, phone, full_name, province, notes]):
                 continue  # ردیف کاملاً خالی
@@ -193,6 +207,9 @@ def import_users_from_bytes(
                 province_name=province,
                 phone=phone,
                 position=position,
+                # لایهٔ دسترسی از نام شیت — «مدیران کلینیک» در لایهٔ ادارهٔ استان (نسخهٔ 1.9.0)
+                access_layer=layer_for_sheet(sheet.title),
+                department=department,
                 notes=notes,
             )
             db.add(user)
@@ -204,6 +221,8 @@ def import_users_from_bytes(
                     "position": position,
                     "province": province,
                     "phone": phone,
+                    "access_layer": layer_for_sheet(sheet.title),
+                    "department": department,
                 }
             )
 

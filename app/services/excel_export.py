@@ -90,9 +90,9 @@ def build_excel(db: Session, filters: dict, user=None) -> tuple[bytes, str]:
     forms = enabled_forms()
     # بلوک سؤال‌ها فقط برای فرم‌هایی که کاربر حق دیدنشان را دارد
     if user is not None:
-        from ..services.scope import allowed_form_keys
+        from ..services.scope import visible_form_keys
 
-        keys = allowed_form_keys(user)
+        keys = visible_form_keys(user, db)
         if keys is not None:
             forms = [f for f in forms if f["key"] in keys]
     if filters.get("form"):
@@ -112,6 +112,7 @@ def build_excel(db: Session, filters: dict, user=None) -> tuple[bytes, str]:
         "استان", "شهرستان", "تاریخ نظرسنجی (شمسی)", "وضعیت تماس",
         "مشاور", "نوع خدمت", "تاریخ دریافت خدمت (شمسی)",
         "نقاط قوت مشاوره تلفنی", "پیشنهاد بهبود", "کارشناس نظارت حرفه‌ای",
+        "انتقادات و پیشنهادات",
     ]
     # بلوک سؤال‌های هر فرم — سرستون با برچسب کوتاه فرم شروع می‌شود
     question_columns: list[tuple[str, str]] = []  # (form_key, متن سؤال)
@@ -151,6 +152,7 @@ def build_excel(db: Session, filters: dict, user=None) -> tuple[bytes, str]:
             s.province.name, s.county.name, gdate_to_jalali_str(s.survey_date), contact_text,
             s.counselor or "", s.service_type or "", s.service_date or "",
             strengths, improvement, s.supervisor_name or "",
+            getattr(s, "criticism", "") or "",
         ]
         # هر رکورد فقط در بلوک سؤال‌های فرم خودش مقدار می‌گیرد
         rec_form = s.form_key or ""
@@ -169,7 +171,7 @@ def build_excel(db: Session, filters: dict, user=None) -> tuple[bytes, str]:
             c.alignment = CENTER if col in (1, 4, 5, 8) else RIGHT
 
     # عرض ستون‌ها
-    base_widths = [6, 16, 14, 16, 14, 14, 12, 14, 16, 24, 14, 14, 16, 30, 30, 18]
+    base_widths = [6, 16, 14, 16, 14, 14, 12, 14, 16, 24, 14, 14, 16, 30, 30, 18, 30]
     for col, w in enumerate(base_widths, start=1):
         ws.column_dimensions[get_column_letter(col)].width = w
     for i in range(len(question_columns)):

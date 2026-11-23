@@ -202,9 +202,9 @@ def build_dashboard(db: Session, *, q=None, province_id=None, county_id=None,
     # فقط فرم‌های مجاز کاربر + رکوردهای در محدودهٔ دسترسی او
     per_form_stats = []
     if user is not None:
-        from ..services.scope import allowed_form_keys as _afk
+        from ..services.scope import visible_form_keys as _vfk
 
-        _keys = _afk(user)
+        _keys = _vfk(user, db)
     else:
         _keys = None
     per_form_forms = [form_by_key(form)] if form else enabled_forms()

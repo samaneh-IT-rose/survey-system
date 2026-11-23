@@ -133,6 +133,12 @@ def validate_survey_payload(db: SessionLocal, data: dict) -> tuple[dict, dict[st
             errors[key] = "این فیلد طولانی‌تر از حد مجاز است (حداکثر ۵۰۰ نویسه)."
         clean[key] = val
 
+    # انتقادات و پیشنهادات — بخش مشترک همهٔ فرم‌ها (اختیاری، حداکثر ۲۰۰۰ نویسه)
+    criticism = str(data.get("criticism") or "").strip()
+    if len(criticism) > 2000:
+        errors["criticism"] = "بخش انتقادات و پیشنهادات حداکثر ۲۰۰۰ نویسه است."
+    clean["criticism"] = criticism
+
     # تاریخ دریافت خدمت: اختیاری؛ اگر وارد شد باید شمسی معتبر باشد
     raw_service_date = str(data.get("service_date") or "").strip()
     if raw_service_date:

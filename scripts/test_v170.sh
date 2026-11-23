@@ -107,7 +107,8 @@ done
 
 curl -s -b "$CA" "$B/api/extract/schema" -o /tmp/v170_schema.json
 chk "schema مدیر: هر سه فرم" "$(J /tmp/v170_schema.json "print(len(d['forms']))")" "3"
-chk "schema: ستون‌های پایه" "$(J /tmp/v170_schema.json "print(len(d['base_fields']))")" "14"
+# نسخهٔ 1.9.0: فیلد پایهٔ «انتقادات و پیشنهادات» به ستون‌های پایه اضافه شد (۱۵ ستون)
+chk "schema: ستون‌های پایه" "$(J /tmp/v170_schema.json "print(len(d['base_fields']))")" "15"
 
 # استخراج با ستون‌های انتخابی: نام + استان + یک سؤال فردی و یک سؤال تلفنی
 QID_IND=$(J /tmp/v170_schema.json "print([f for f in d['forms'] if f['key']=='individual'][0]['questions'][0]['id'])")

@@ -44,8 +44,17 @@ templates.env.globals["asset"] = _asset_url
 router = APIRouter(prefix=APP_PREFIX, tags=["pages"])
 
 
-def _ctx(user: User | None = None, **extra):
+def _ctx(user: User | None = None, db: Session | None = None, **extra):
     from ..services.scope import user_forms
+
+    # فرم‌های قابل نمایش کاربر — با قواعد لایهٔ سازمانی (سطح استان / ادارهٔ استان)
+    if db is not None:
+        visible_forms = user_forms(user, db)
+    else:
+        from ..database import SessionLocal
+
+        with SessionLocal() as _s:
+            visible_forms = user_forms(user, _s)
 
     ctx = {
         "app_title": APP_TITLE,
@@ -56,7 +65,7 @@ def _ctx(user: User | None = None, **extra):
         "asset": _asset_url,
         "user": user,
         # منوی «فرم‌های نظرسنجی» — فقط فرم‌هایی که این کاربر اجازهٔ دیدنشان را دارد
-        "forms": user_forms(user),
+        "forms": visible_forms,
     }
     ctx.update(extra)
     return ctx
@@ -85,11 +94,11 @@ def form_page(form_key: str, request: Request, user: User = Depends(page_require
     form = form_by_key(form_key)
     if form is None:
         raise HTTPException(404, detail="فرم نظرسنجی یافت نشد.")
-    # اگر مدیر برای کاربر «فرم‌های مجاز» تعیین کرده، این فرم برایش باز نمی‌شود
-    from ..services.scope import allowed_form_keys
+    # قواعد لایهٔ سازمانی (سطح استان / ادارهٔ استان) + «فرم‌های مجاز» کاربر —
+    # اگر هیچ‌کدام این فرم را باز نکرده باشد، صفحهٔ ثبت باز نمی‌شود (نسخهٔ 1.9.0)
+    from ..services.scope import can_access_form
 
-    allowed = allowed_form_keys(user)
-    if allowed is not None and form["key"] not in allowed:
+    if not can_access_form(user, form["key"], db):
         raise HTTPException(403, detail="به این نوع فرم دسترسی ندارید.")
 
     questions = questions_for_form(db, form["key"])
@@ -124,7 +133,7 @@ def extract_page(request: Request, user: User = Depends(page_require_perm(PERM_V
     from ..services.form_template import questions_for_form
     from ..services.scope import user_forms
 
-    forms = user_forms(user)
+    forms = user_forms(user, db)
     # سؤال‌های هر فرم برای انتخاب ستون — فقط فرم‌های مجاز این کاربر
     form_questions = {}
     for f in forms:
@@ -152,9 +161,21 @@ def template_page(request: Request, user: User = Depends(page_admin)):
     return templates.TemplateResponse(request, "template_admin.html", _ctx(user, page_title="مدیریت الگوی فرم"))
 
 
+@router.get("/form-access", response_class=HTMLResponse)
+def form_access_page(request: Request, user: User = Depends(page_admin)):
+    """سطح دسترسی فرم‌ها — قواعد دو لایهٔ «سطح استان» و «ادارهٔ استان» (نسخهٔ 1.9.0)."""
+    return templates.TemplateResponse(request, "form_access.html", _ctx(user, page_title="سطح دسترسی فرم‌ها"))
+
+
+@router.get("/criticisms", response_class=HTMLResponse)
+def criticisms_page(request: Request, user: User = Depends(page_require_perm(PERM_VIEW))):
+    """انتقادات و پیشنهادات ثبت‌شده در همهٔ فرم‌ها (نسخهٔ 1.9.0)."""
+    return templates.TemplateResponse(request, "criticisms.html", _ctx(user, page_title="انتقادات و پیشنهادات"))
+
+
 @router.get("/users", response_class=HTMLResponse)
 def users_page(request: Request, user: User = Depends(page_admin), db: Session = Depends(get_db)):
-    from ..constants import LEVEL_LABELS, PERMISSIONS
+    from ..constants import LEVEL_LABELS, LAYER_LABELS, PERMISSIONS
     from ..forms_registry import enabled_forms
     from ..services.roles import list_roles, serialize_role
 
@@ -169,6 +190,8 @@ def users_page(request: Request, user: User = Depends(page_admin), db: Session =
             roles=[serialize_role(db, r) for r in list_roles(db)],
             permissions=[{"value": key, "label": label} for key, label in PERMISSIONS],
             forms=enabled_forms(),  # برای گزینه‌های «فرم‌های مجاز» کاربر
+            # لایه‌های دسترسی سازمانی (نسخهٔ 1.9.0): سطح استان / ادارهٔ استان
+            access_layers=[{"value": key, "label": label} for key, label in LAYER_LABELS.items()],
         ),
     )
 

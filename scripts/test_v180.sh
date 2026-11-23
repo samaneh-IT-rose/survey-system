@@ -55,9 +55,11 @@ OUT2=$($VPY -m app.seed_users --file app/seed_data/users_seed.xlsx 2>&1)
 chk "seed دوباره: هیچ کاربر تکراری" "$(echo "$OUT2" | grep -o '0 کاربر ساخته شد؛ 41 ردیف رد شد' | head -1)" "0 کاربر ساخته شد؛ 41 ردیف رد شد"
 
 # ---------- ۲) دادهٔ آزمایشی: رکورد در دو استان ----------
-# استان ۲ = آذربایجان غربی، استان ۸ = تهران
-CNTY2=$(curl -s -b "$CA" "$B/api/counties?province_id=2" | $VPY -c "import json,sys; print(json.load(sys.stdin)[0]['id'])")
-CNTY8=$(curl -s -b "$CA" "$B/api/counties?province_id=8" | $VPY -c "import json,sys; print(json.load(sys.stdin)[0]['id'])")
+# استان‌ها با جست‌وجوی نام از API — ترتیب فهرست رسمی (نسخهٔ 1.9.0) ثابت نیست
+PID_W=$(curl -s -b "$CA" "$B/api/provinces" | $VPY -c "import json,sys; print([p['id'] for p in json.load(sys.stdin) if p['name']=='آذربایجان غربی'][0])")
+PID_T=$(curl -s -b "$CA" "$B/api/provinces" | $VPY -c "import json,sys; print([p['id'] for p in json.load(sys.stdin) if p['name']=='تهران'][0])")
+CNTY2=$(curl -s -b "$CA" "$B/api/counties?province_id=$PID_W" | $VPY -c "import json,sys; print(json.load(sys.stdin)[0]['id'])")
+CNTY8=$(curl -s -b "$CA" "$B/api/counties?province_id=$PID_T" | $VPY -c "import json,sys; print(json.load(sys.stdin)[0]['id'])")
 CID=$(curl -s -b "$CA" "$B/api/template/contact-options?form=tel" | $VPY -c "import json,sys; d=json.load(sys.stdin); c=[x for x in d if not x['requires_answers']]; print(c[0]['id'] if c else d[0]['id'])")
 
 mk_rec() { # $1=form_key $2=province $3=county $4=first $5=last $6=national
@@ -66,10 +68,10 @@ mk_rec() { # $1=form_key $2=province $3=county $4=first $5=last $6=national
     \"phone\":\"09120000000\",\"province_id\":$2,\"county_id\":$3,\"survey_date\":\"1404/08/01\",
     \"contact_option_id\":$CID,\"answers\":[]}" | $VPY -c "import json,sys; d=json.load(sys.stdin); print(d.get('id','ERR'))"
 }
-R_P2=$(mk_rec tel 2 "$CNTY2" "رکورد" "غرب" "$NC1")
-R_P8=$(mk_rec tel 8 "$CNTY8" "رکورد" "تهران" "$NC2")
-chk "رکورد استان ۲ ساخته شد" "$([ "$R_P2" != "ERR" ] && [ -n "$R_P2" ] && echo yes || echo no)" "yes"
-chk "رکورد استان ۸ ساخته شد" "$([ "$R_P8" != "ERR" ] && [ -n "$R_P8" ] && echo yes || echo no)" "yes"
+R_P2=$(mk_rec tel "$PID_W" "$CNTY2" "رکورد" "غرب" "$NC1")
+R_P8=$(mk_rec tel "$PID_T" "$CNTY8" "رکورد" "تهران" "$NC2")
+chk "رکورد آذربایجان غربی ساخته شد" "$([ "$R_P2" != "ERR" ] && [ -n "$R_P2" ] && echo yes || echo no)" "yes"
+chk "رکورد تهران ساخته شد" "$([ "$R_P8" != "ERR" ] && [ -n "$R_P8" ] && echo yes || echo no)" "yes"
 
 # ---------- ۳) کاربر استانی seed‌شده: فرناز غنی دل تکانلو (آذربایجان غربی) ----------
 CU=/tmp/v180_prov.txt; rm -f "$CU"
@@ -80,8 +82,8 @@ curl -s -b "$CU" -c "$CU" -o /dev/null -X POST "$B/change-password" \
 
 curl -s -b "$CU" "$B/api/provinces" -o /tmp/v180_prov_list.json
 chk "کمبوباکس استان: فقط استان خودش" "$(J /tmp/v180_prov_list.json "print(d[0]['name'], len(d))")" "آذربایجان غربی 1"
-chk "شهرستان استان دیگر → 403" "$(curl -s -b "$CU" -o /dev/null -w '%{http_code}' "$B/api/counties?province_id=8")" "403"
-chk "شهرستان استان خودش → 200" "$(curl -s -b "$CU" -o /dev/null -w '%{http_code}' "$B/api/counties?province_id=2")" "200"
+chk "شهرستان استان دیگر → 403" "$(curl -s -b "$CU" -o /dev/null -w '%{http_code}' "$B/api/counties?province_id=$PID_T")" "403"
+chk "شهرستان استان خودش → 200" "$(curl -s -b "$CU" -o /dev/null -w '%{http_code}' "$B/api/counties?province_id=$PID_W")" "200"
 
 # آرشیو: فقط رکورد استان خودش
 curl -s -b "$CU" "$B/api/surveys" -o /tmp/v180_list.json
@@ -91,18 +93,18 @@ chk "رکورد استان دیگر → 403" "$(curl -s -b "$CU" -o /dev/null -w
 # ثبت فرم استان دیگر → 403؛ ثبت فرم استان خودش → 200
 chk "ثبت فرم استان دیگر → 403" "$(curl -s -b "$CU" -o /dev/null -w '%{http_code}' -X POST "$B/api/surveys" -H 'Content-Type: application/json' -d "{
   \"form_key\":\"tel\",\"first_name\":\"تست\",\"last_name\":\"خارج\",\"national_code\":\"$NC4\",
-  \"phone\":\"09120000009\",\"province_id\":8,\"county_id\":$CNTY8,\"survey_date\":\"1404/08/02\",
+  \"phone\":\"09120000009\",\"province_id\":$PID_T,\"county_id\":$CNTY8,\"survey_date\":\"1404/08/02\",
   \"contact_option_id\":$CID,\"answers\":[]}")" "403"
 R_OWN=$(curl -s -b "$CU" -X POST "$B/api/surveys" -H 'Content-Type: application/json' -d "{
   \"form_key\":\"tel\",\"first_name\":\"ثبت\",\"last_name\":\"خودش\",\"national_code\":\"$NC3\",
-  \"phone\":\"09120000008\",\"province_id\":2,\"county_id\":$CNTY2,\"survey_date\":\"1404/08/02\",
+  \"phone\":\"09120000008\",\"province_id\":$PID_W,\"county_id\":$CNTY2,\"survey_date\":\"1404/08/02\",
   \"contact_option_id\":$CID,\"answers\":[]}" | $VPY -c "import json,sys; d=json.load(sys.stdin); print(d.get('id','ERR'))")
 chk "ثبت فرم استان خودش → موفق" "$([ "$R_OWN" != "ERR" ] && [ -n "$R_OWN" ] && echo yes || echo no)" "yes"
 
 # ویرایش و تلاش برای بردن رکورد به استان دیگر → 403
 chk "انتقال رکورد به استان دیگر → 403" "$(curl -s -b "$CU" -o /dev/null -w '%{http_code}' -X PATCH "$B/api/surveys/$R_OWN" -H 'Content-Type: application/json' -d "{
   \"form_key\":\"tel\",\"first_name\":\"ثبت\",\"last_name\":\"خودش\",\"national_code\":\"$NC3\",
-  \"phone\":\"09120000008\",\"province_id\":8,\"county_id\":$CNTY8,\"survey_date\":\"1404/08/02\",
+  \"phone\":\"09120000008\",\"province_id\":$PID_T,\"county_id\":$CNTY8,\"survey_date\":\"1404/08/02\",
   \"contact_option_id\":$CID,\"answers\":[]}")" "403"
 
 # داشبورد: فقط رکوردهای استان خودش (1 اداری + 1 خودش = 2)

@@ -22,6 +22,7 @@
         <th>استان</th>
         <th>شماره همراه</th>
         <th>سمت / گروه</th>
+        <th>لایهٔ دسترسی</th>
         <th>نام کاربری</th>
         <th>سطح کاربری</th>
         <th>نقش</th>
@@ -61,6 +62,17 @@
       </label>
       <label class="field"><span>سمت / گروه سازمانی</span>
         <input type="text" id="u_position" autocomplete="off">
+      </label>
+      <label class="field"><span>لایهٔ دسترسی سازمانی</span>
+        <select id="u_access_layer">
+          {% for ly in access_layers %}
+          <option value="{{ ly.value }}">{{ ly.label }}</option>
+          {% endfor %}
+        </select>
+        <small class="muted" id="u_access_layer_hint">لایهٔ «سطح استان» برای مسئولین استانی و لایهٔ «ادارهٔ استان» برای واحدهای تابعه است — اینکه هر فرم را کدام لایه ببیند در صفحهٔ «سطح دسترسی فرم‌ها» تنظیم می‌شود.</small>
+      </label>
+      <label class="field"><span>ادارهٔ استان</span>
+        <input type="text" id="u_department" autocomplete="off" placeholder="مثلاً تربیت بدنی یا انتشارات — فقط برای لایهٔ «ادارهٔ استان»">
       </label>
       <label class="field"><span>توضیحات</span>
         <input type="text" id="u_notes" autocomplete="off">

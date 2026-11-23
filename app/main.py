@@ -14,6 +14,7 @@ from .routers import (
     api_dashboard,
     api_extract,
     api_export,
+    api_form_access,
     api_keys,
     api_locations,
     api_logs,
@@ -22,6 +23,7 @@ from .routers import (
     api_template,
     api_users,
     api_v1,
+    api_criticisms,
     pages,
     pages_auth,
 )
@@ -40,6 +42,19 @@ async def lifespan(app: FastAPI):
     from .services.form_template import ensure_form_templates
 
     with SessionLocal() as _db:
+        # ادغام استان‌ها/شهرستان‌های فایل اکسل رسمی با دیتابیس (نسخهٔ 1.9.0)
+        from .services.geo import ensure_official_locations
+
+        geo = ensure_official_locations(_db)
+        if geo["provinces_added"] or geo["counties_added"]:
+            logging.getLogger("survey.geo").warning(
+                "ensure_official_locations: +%s province(s), +%s county(es)",
+                geo["provinces_added"], geo["counties_added"],
+            )
+        # قواعد پیش‌فرض دو لایهٔ دسترسی فرم‌ها (نسخهٔ 1.9.0)
+        from .services.form_access import ensure_form_access_rules
+
+        ensure_form_access_rules(_db)
         ensure_form_templates(_db)
         # نقش‌های سیستمی + سازگاری نقش‌های سفارشی (نسخهٔ 1.6.0)
         from .services.roles import ensure_roles
@@ -132,6 +147,8 @@ app.include_router(api_export.router, prefix=APP_PREFIX)
 app.include_router(api_dashboard.router, prefix=APP_PREFIX)
 app.include_router(api_users.router, prefix=APP_PREFIX)
 app.include_router(api_roles.router, prefix=APP_PREFIX)
+app.include_router(api_form_access.router, prefix=APP_PREFIX)
+app.include_router(api_criticisms.router, prefix=APP_PREFIX)
 app.include_router(api_logs.router, prefix=APP_PREFIX)
 app.include_router(api_keys.router, prefix=APP_PREFIX)
 app.include_router(api_v1.router, prefix=APP_PREFIX)

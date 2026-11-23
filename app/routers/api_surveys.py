@@ -14,7 +14,7 @@ from ..constants import PERM_DELETE, PERM_EDIT, PERM_EXPORT, PERM_VIEW, RATING_L
 from ..database import get_db
 from ..forms_registry import DEFAULT_FORM_KEY, form_by_key, form_title
 from ..models import Survey, SurveyAnswer, User
-from ..services.scope import allowed_form_keys, apply_record_scope, can_view_record, province_scope_id
+from ..services.scope import apply_record_scope, can_view_record, province_scope_id, visible_form_keys
 from ..services.validation import validate_survey_payload
 from ..utils.activity import log_activity
 from ..utils.jalali import gdate_to_jalali_str, jalali_to_gregorian, parse_jalali_str
@@ -56,6 +56,7 @@ def serialize_survey(s: Survey) -> dict:
         "improvement_extra": getattr(s, "improvement_extra", "") or "",
         "supervisor_name": getattr(s, "supervisor_name", "") or "",
         "supervisor_signature": getattr(s, "supervisor_signature", "") or "",
+        "criticism": getattr(s, "criticism", "") or "",
         "contact_option": (
             {"id": co.id, "text": co.text, "requires_answers": co.requires_answers}
             if co
@@ -106,11 +107,11 @@ def _save_answers(db: Session, survey: Survey, clean: dict) -> None:
 
 @router.post("")
 def create_survey(payload: dict, request: Request, user: User = Depends(api_require_perm(PERM_EDIT)), db: Session = Depends(get_db)):
-    # اگر مدیر برای کاربر «فرم‌های مجاز» تعیین کرده، ثبت فرم دیگر پیش از هر
-    # اعتبارسنجی رد می‌شود تا اطلاعاتی دربارهٔ فرم غیرمجاز فاش نشود
-    allowed = allowed_form_keys(user)
+    # اگر قواعد لایهٔ سازمانی یا «فرم‌های مجاز» کاربر این فرم را باز نکرده باشد،
+    # ثبت پیش از هر اعتبارسنجی رد می‌شود تا اطلاعاتی دربارهٔ فرم غیرمجاز فاش نشود
     raw_form_key = str(payload.get("form_key") or DEFAULT_FORM_KEY)
-    if allowed is not None and raw_form_key not in allowed:
+    visible = visible_form_keys(user, db)
+    if visible is not None and raw_form_key not in visible:
         raise HTTPException(status_code=403, detail={"message": "شما اجازهٔ ثبت این نوع فرم را ندارید."})
 
     clean, errors = validate_survey_payload(db, payload)
@@ -142,6 +143,7 @@ def create_survey(payload: dict, request: Request, user: User = Depends(api_requ
         improvement_extra=clean.get("improvement_extra", ""),
         supervisor_name=clean.get("supervisor_name", ""),
         supervisor_signature=clean.get("supervisor_signature", ""),
+        criticism=clean.get("criticism", ""),
     )
     db.add(survey)
     db.flush()
@@ -313,7 +315,27 @@ def update_survey(survey_id: int, payload: dict, request: Request, user: User = 
     if not payload.get("form_key"):
         payload = dict(payload)
         payload["form_key"] = s.form_key or DEFAULT_FORM_KEY
-    clean, errors = validate_survey_payload(db, payload)
+
+    # PATCH جزئی (نسخهٔ 1.9.0): فیلدهای الزامیِ غایب از مقدار فعلی رکورد پر می‌شود
+    # تا ویرایش فقط یک فیلد (مثل انتقادات و پیشنهادات) به ۴۲۲ یا حذف بقیهٔ داده‌ها نرسد؛
+    # پاسخ‌های جدول هم اگر ارسال نشده باشند با پاسخ‌های موجود رکورد ادامه می‌یابند
+    merged = dict(payload)
+    if not isinstance(merged.get("answers"), list) or not merged.get("answers"):
+        merged["answers"] = [{"question_id": a.question_id, "value": a.value} for a in s.answers]
+    _base_map = {
+        "first_name": s.first_name,
+        "last_name": s.last_name,
+        "national_code": s.national_code,
+        "phone": s.phone,
+        "province_id": s.province_id,
+        "county_id": s.county_id,
+        "survey_date": gdate_to_jalali_str(s.survey_date),
+        "contact_option_id": s.contact_option_id,
+    }
+    for _k, _v in _base_map.items():
+        if merged.get(_k) in (None, "") and _v:
+            merged[_k] = _v
+    clean, errors = validate_survey_payload(db, merged)
     if errors:
         raise HTTPException(status_code=422, detail={"message": "اطلاعات فرم معتبر نیست.", "errors": errors})
 
@@ -342,6 +364,8 @@ def update_survey(survey_id: int, payload: dict, request: Request, user: User = 
     s.improvement_extra = clean.get("improvement_extra", "") if "improvement_extra" in payload else (s.improvement_extra or "")
     s.supervisor_name = clean.get("supervisor_name", "")
     s.supervisor_signature = clean.get("supervisor_signature", "")
+    # انتقادات و پیشنهادات — اگر کلاینت نفرستدشان مقدار فعلی حفظ می‌شود
+    s.criticism = clean.get("criticism", "") if "criticism" in payload else (s.criticism or "")
     _save_answers(db, s, clean)
     db.commit()
     log_activity(db, request, user, "survey_update", f"رکورد {survey_id} — {s.first_name} {s.last_name}")
